@@ -3,7 +3,7 @@ Main FastAPI application for coordination gap detection.
 """
 import logging
 from contextlib import asynccontextmanager
-from typing import AsyncGenerator
+from typing import Any, AsyncGenerator
 
 from fastapi import FastAPI
 from fastapi.middleware.cors import CORSMiddleware
@@ -68,7 +68,7 @@ def create_app() -> FastAPI:
         return {"status": "healthy", "environment": settings.environment}
 
     @app.get("/health/detailed")
-    async def detailed_health_check() -> dict[str, any]:
+    async def detailed_health_check() -> dict[str, Any]:
         """
         Detailed health check with service connectivity status.
         Checks: Postgres, Redis, ChromaDB
