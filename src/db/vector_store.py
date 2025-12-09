@@ -19,17 +19,26 @@ class VectorStore:
 
     def __init__(self) -> None:
         """Initialize ChromaDB client."""
+        import os
+
         settings = get_settings()
 
-        # In production with docker compose, we'll use HTTP client
-        # For now, use persistent client for local file storage
-        if settings.environment == "production":
-            # HTTP client for Docker service
+        # Use HTTP client when CHROMA_HOST is set (Docker/production)
+        # Otherwise use persistent client for local development
+        chroma_host = os.getenv("CHROMA_HOST", "chromadb")
+        use_http_client = os.getenv("CHROMA_HTTP_CLIENT", "false").lower() == "true"
+
+        if use_http_client:
+            # HTTP client for Docker Compose or remote ChromaDB
+            logger.info(f"Using ChromaDB HTTP client: {chroma_host}:8000")
             self.client = chromadb.HttpClient(
-                host="chromadb", port=8000, settings=ChromaSettings(anonymized_telemetry=False)
+                host=chroma_host,
+                port=8000,
+                settings=ChromaSettings(anonymized_telemetry=False)
             )
         else:
-            # Persistent client for development
+            # Persistent client for local development
+            logger.info(f"Using ChromaDB persistent client: {settings.chroma_persist_dir}")
             self.client = chromadb.PersistentClient(
                 path=settings.chroma_persist_dir,
                 settings=ChromaSettings(anonymized_telemetry=False),

@@ -73,6 +73,8 @@ services:
 
       # Vector Store
       - CHROMA_PERSIST_DIR=/app/data/chroma
+      - CHROMA_HTTP_CLIENT=true
+      - CHROMA_HOST=chromadb
 
       # API Keys (load from .env file)
       - ANTHROPIC_API_KEY=${ANTHROPIC_API_KEY:-}
