@@ -1,6 +1,3 @@
-# Project-specific
-MILESTONES.md
-
 # Python
 __pycache__/
 *.py[cod]
@@ -33,7 +30,6 @@ venv/
 ENV/
 env.bak/
 venv.bak/
-.python-version
 
 # IDEs
 .vscode/
