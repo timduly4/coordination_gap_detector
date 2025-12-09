@@ -11,17 +11,19 @@ RUN apt-get update && apt-get install -y \
     && rm -rf /var/lib/apt/lists/*
 
 # Install UV
-RUN curl -LsSf https://astral.sh/uv/install.sh | sh
-ENV PATH="/root/.cargo/bin:${PATH}"
+COPY --from=ghcr.io/astral-sh/uv:latest /uv /usr/local/bin/uv
 
 # Set working directory
 WORKDIR /app
 
 # Copy dependency files
-COPY pyproject.toml ./
+COPY pyproject.toml README.md ./
 
-# Install dependencies
-RUN uv pip install --system -e .
+# Copy source code (needed for package installation)
+COPY src/ ./src/
+
+# Install the package and its dependencies
+RUN uv pip install --system .
 
 # Stage 2: Runtime
 FROM python:3.11-slim
