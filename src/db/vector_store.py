@@ -21,7 +21,7 @@ class VectorStore:
         """Initialize ChromaDB client."""
         settings = get_settings()
 
-        # In production with docker-compose, we'll use HTTP client
+        # In production with docker compose, we'll use HTTP client
         # For now, use persistent client for local file storage
         if settings.environment == "production":
             # HTTP client for Docker service

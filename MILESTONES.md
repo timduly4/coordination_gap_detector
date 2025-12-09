@@ -19,7 +19,7 @@ Build this project in stages, with each milestone being a working, demoable vers
 
 ### Success Criteria:
 ```bash
-docker-compose up
+docker compose up
 curl http://localhost:8000/health
 curl http://localhost:8000/api/v1/search -d '{"query": "OAuth"}'
 # Returns mock Slack messages with relevance scores
@@ -194,11 +194,11 @@ tests/
 ### Success Criteria:
 ```bash
 # Demo mode (default)
-docker-compose up
+docker compose up
 # Uses mock data
 
 # Real Slack mode
-DEMO_MODE=false SLACK_BOT_TOKEN=xoxb-... docker-compose up
+DEMO_MODE=false SLACK_BOT_TOKEN=xoxb-... docker compose up
 # Ingests real Slack messages
 
 # Backfill historical data
@@ -536,7 +536,7 @@ Tag conventions:
 ✅ **Demoable**: Can show someone working functionality
 ✅ **Tested**: Tests pass, coverage documented
 ✅ **Documented**: README updated, CHANGELOG entry
-✅ **Deployable**: docker-compose up works
+✅ **Deployable**: docker compose up works
 ✅ **Mergeable**: PR ready, CI passes
 
 ## Tips for Success

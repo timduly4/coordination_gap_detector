@@ -33,7 +33,7 @@ GITHUB_TOKEN=your_token           # Not needed yet
 ### 3. Start All Services
 
 ```bash
-docker-compose up
+docker compose up
 ```
 
 This will start:
@@ -64,7 +64,7 @@ open http://localhost:8000/docs
 ### 5. Run Database Migrations
 
 ```bash
-docker-compose exec api alembic upgrade head
+docker compose exec api alembic upgrade head
 ```
 
 This creates the `sources` and `messages` tables in PostgreSQL.
@@ -72,7 +72,7 @@ This creates the `sources` and `messages` tables in PostgreSQL.
 ### 6. Verify Database Tables
 
 ```bash
-docker-compose exec postgres psql -U coordination_user -d coordination -c "\dt"
+docker compose exec postgres psql -U coordination_user -d coordination -c "\dt"
 ```
 
 You should see:
@@ -105,7 +105,7 @@ uv pip install -e ".[dev]"
 You'll still need PostgreSQL, Redis, and ChromaDB. The easiest way is to run them via Docker:
 
 ```bash
-docker-compose up postgres redis chromadb
+docker compose up postgres redis chromadb
 ```
 
 ### 4. Run Migrations
@@ -189,47 +189,47 @@ Stores content from all sources:
 
 ```bash
 # Start services
-docker-compose up
+docker compose up
 
 # Start in background
-docker-compose up -d
+docker compose up -d
 
 # Stop services
-docker-compose down
+docker compose down
 
 # Stop and remove volumes (fresh start)
-docker-compose down -v
+docker compose down -v
 
 # View logs
-docker-compose logs -f
+docker compose logs -f
 
 # View logs for specific service
-docker-compose logs -f api
+docker compose logs -f api
 
 # Rebuild after code changes
-docker-compose up --build
+docker compose up --build
 ```
 
 ### Database Commands
 
 ```bash
 # Access PostgreSQL shell
-docker-compose exec postgres psql -U coordination_user -d coordination
+docker compose exec postgres psql -U coordination_user -d coordination
 
 # List tables
-docker-compose exec postgres psql -U coordination_user -d coordination -c "\dt"
+docker compose exec postgres psql -U coordination_user -d coordination -c "\dt"
 
 # Check migrations status
-docker-compose exec api alembic current
+docker compose exec api alembic current
 
 # Create new migration
-docker-compose exec api alembic revision --autogenerate -m "description"
+docker compose exec api alembic revision --autogenerate -m "description"
 
 # Run migrations
-docker-compose exec api alembic upgrade head
+docker compose exec api alembic upgrade head
 
 # Rollback migration
-docker-compose exec api alembic downgrade -1
+docker compose exec api alembic downgrade -1
 ```
 
 ### ChromaDB Commands
@@ -249,13 +249,13 @@ curl http://localhost:8001/api/v1/collections/coordination_messages
 
 ```bash
 # Access Redis CLI
-docker-compose exec redis redis-cli
+docker compose exec redis redis-cli
 
 # Ping Redis
-docker-compose exec redis redis-cli ping
+docker compose exec redis redis-cli ping
 
 # Check Redis keys
-docker-compose exec redis redis-cli KEYS '*'
+docker compose exec redis redis-cli KEYS '*'
 ```
 
 ## Development Workflow
@@ -273,13 +273,13 @@ Docker Compose mounts source code as volumes, so changes to Python files automat
 
 ```bash
 # Inside container
-docker-compose exec api pytest
+docker compose exec api pytest
 
 # With coverage
-docker-compose exec api pytest --cov=src --cov-report=html
+docker compose exec api pytest --cov=src --cov-report=html
 
 # Specific test file
-docker-compose exec api pytest tests/test_db/
+docker compose exec api pytest tests/test_db/
 
 # Local development
 pytest
@@ -298,30 +298,30 @@ pytest --cov=src
 **Error:** `port is already allocated`
 ```bash
 # Stop conflicting services or change ports in docker-compose.yml
-docker-compose down
+docker compose down
 ```
 
 ### Database connection fails
 
 ```bash
 # Check PostgreSQL is running
-docker-compose ps postgres
+docker compose ps postgres
 
 # Check PostgreSQL logs
-docker-compose logs postgres
+docker compose logs postgres
 
 # Restart PostgreSQL
-docker-compose restart postgres
+docker compose restart postgres
 ```
 
 ### ChromaDB connection fails
 
 ```bash
 # Check ChromaDB is running
-docker-compose ps chromadb
+docker compose ps chromadb
 
 # Check ChromaDB logs
-docker-compose logs chromadb
+docker compose logs chromadb
 
 # Test ChromaDB directly
 curl http://localhost:8001/api/v1/heartbeat
@@ -331,25 +331,25 @@ curl http://localhost:8001/api/v1/heartbeat
 
 ```bash
 # Check current migration status
-docker-compose exec api alembic current
+docker compose exec api alembic current
 
 # Force migration to specific version
-docker-compose exec api alembic stamp head
+docker compose exec api alembic stamp head
 
 # Drop all tables and start fresh (DESTRUCTIVE)
-docker-compose down -v
-docker-compose up -d
-docker-compose exec api alembic upgrade head
+docker compose down -v
+docker compose up -d
+docker compose exec api alembic upgrade head
 ```
 
 ### Code changes not reflecting
 
 ```bash
 # Rebuild Docker image
-docker-compose up --build
+docker compose up --build
 
 # Or restart API service
-docker-compose restart api
+docker compose restart api
 ```
 
 ## Next Steps
@@ -379,7 +379,7 @@ docker-compose restart api
 ## Getting Help
 
 - Check [GitHub Issues](https://github.com/timduly4/coordination_gap_detector/issues)
-- Review logs: `docker-compose logs -f`
+- Review logs: `docker compose logs -f`
 - Verify health: `curl http://localhost:8000/health/detailed`
 
 ---
