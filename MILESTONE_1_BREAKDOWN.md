@@ -87,7 +87,7 @@ docs: add README, CLAUDE.md, and MILESTONES.md
 - [ ] Create .dockerignore
 - [ ] Implement basic FastAPI app in main.py
 - [ ] Add health check endpoint
-- [ ] Configure service networking in docker-compose
+- [ ] Configure service networking in docker compose
 - [ ] Add volume mounts for development
 
 ### PR Description Template:
@@ -103,7 +103,7 @@ Docker Compose setup with Postgres, Redis, and ChromaDB for local development.
 - Development volume mounts for hot reload
 
 ### Testing
-- [ ] `docker-compose up` starts all services
+- [ ] `docker compose up` starts all services
 - [ ] `curl http://localhost:8000/health` returns 200
 - [ ] Services can communicate (pg, redis, chroma accessible)
 - [ ] Hot reload works when editing src/ files
@@ -118,7 +118,7 @@ Docker Compose setup with Postgres, Redis, and ChromaDB for local development.
 **Commit Messages:**
 ```
 chore: add Dockerfile with multi-stage build
-feat: add docker-compose with postgres, redis, chromadb
+feat: add docker compose with postgres, redis, chromadb
 feat: create basic FastAPI app with health endpoint
 ```
 
@@ -244,7 +244,7 @@ Realistic Slack message data for development and testing.
 uv run python scripts/generate_mock_data.py --scenarios all
 
 # Verify in database
-docker-compose exec postgres psql -U user -d coordination -c "SELECT COUNT(*) FROM messages;"
+docker compose exec postgres psql -U user -d coordination -c "SELECT COUNT(*) FROM messages;"
 \`\`\`
 ```
 

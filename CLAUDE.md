@@ -456,7 +456,7 @@ cp .env.example .env
 # Edit .env with your API keys and source credentials
 
 # Start infrastructure (Postgres, Redis, Elasticsearch, Kafka)
-docker-compose up -d
+docker compose up -d
 
 # Run migrations
 uv run alembic upgrade head

@@ -65,7 +65,7 @@ cp .env.example .env
 
 ```bash
 # Start required services (PostgreSQL, Redis, Elasticsearch, Kafka)
-docker-compose up -d
+docker compose up -d
 
 # Run database migrations
 uv run alembic upgrade head
