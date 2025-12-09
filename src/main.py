@@ -59,11 +59,58 @@ def create_app() -> FastAPI:
         allow_headers=["*"],
     )
 
-    # Health check endpoint
+    # Health check endpoints
     @app.get("/health")
     async def health_check() -> dict[str, str]:
         """Basic health check endpoint."""
         return {"status": "healthy", "environment": settings.environment}
+
+    @app.get("/health/detailed")
+    async def detailed_health_check() -> dict[str, any]:
+        """
+        Detailed health check with service connectivity status.
+        Checks: Postgres, Redis, ChromaDB
+        """
+        health_status = {
+            "status": "healthy",
+            "environment": settings.environment,
+            "services": {}
+        }
+
+        # Check Postgres
+        try:
+            # Basic check - will be enhanced when db connections are added
+            health_status["services"]["postgres"] = {
+                "status": "not_configured",
+                "url": settings.postgres_url.split("@")[-1] if "@" in settings.postgres_url else "not_set"
+            }
+        except Exception as e:
+            health_status["services"]["postgres"] = {"status": "error", "message": str(e)}
+
+        # Check Redis
+        try:
+            health_status["services"]["redis"] = {
+                "status": "not_configured",
+                "url": settings.redis_url
+            }
+        except Exception as e:
+            health_status["services"]["redis"] = {"status": "error", "message": str(e)}
+
+        # Check ChromaDB
+        try:
+            health_status["services"]["chromadb"] = {
+                "status": "not_configured",
+                "persist_dir": settings.chroma_persist_dir
+            }
+        except Exception as e:
+            health_status["services"]["chromadb"] = {"status": "error", "message": str(e)}
+
+        # Overall status
+        service_statuses = [svc.get("status") for svc in health_status["services"].values()]
+        if "error" in service_statuses:
+            health_status["status"] = "degraded"
+
+        return health_status
 
     @app.get("/")
     async def root() -> dict[str, str]:

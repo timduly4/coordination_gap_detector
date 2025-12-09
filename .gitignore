@@ -107,9 +107,6 @@ k8s/secrets/
 terraform.tfvars
 *.tfvars
 
-# Docker
-.dockerignore
-
 # macOS
 .DS_Store
 .AppleDouble

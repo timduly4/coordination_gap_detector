@@ -1,0 +1,117 @@
+version: '3.8'
+
+services:
+  # PostgreSQL Database
+  postgres:
+    image: pgvector/pgvector:pg16
+    container_name: coordination-postgres
+    environment:
+      POSTGRES_USER: coordination_user
+      POSTGRES_PASSWORD: coordination_pass
+      POSTGRES_DB: coordination
+    ports:
+      - "5432:5432"
+    volumes:
+      - postgres_data:/var/lib/postgresql/data
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U coordination_user -d coordination"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+    networks:
+      - coordination-network
+
+  # Redis Cache
+  redis:
+    image: redis:7-alpine
+    container_name: coordination-redis
+    ports:
+      - "6379:6379"
+    volumes:
+      - redis_data:/data
+    command: redis-server --appendonly yes
+    healthcheck:
+      test: ["CMD", "redis-cli", "ping"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+    networks:
+      - coordination-network
+
+  # ChromaDB Vector Store
+  chromadb:
+    image: chromadb/chroma:latest
+    container_name: coordination-chromadb
+    ports:
+      - "8001:8000"
+    volumes:
+      - chroma_data:/chroma/chroma
+    environment:
+      - IS_PERSISTENT=TRUE
+      - ANONYMIZED_TELEMETRY=FALSE
+    healthcheck:
+      test: ["CMD", "curl", "-f", "http://localhost:8000/api/v1/heartbeat"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+    networks:
+      - coordination-network
+
+  # FastAPI Application
+  api:
+    build:
+      context: .
+      dockerfile: Dockerfile
+    container_name: coordination-api
+    ports:
+      - "8000:8000"
+    environment:
+      # Application
+      - ENVIRONMENT=development
+      - API_HOST=0.0.0.0
+      - API_PORT=8000
+      - LOG_LEVEL=INFO
+
+      # Database
+      - POSTGRES_URL=postgresql://coordination_user:coordination_pass@postgres:5432/coordination
+      - REDIS_URL=redis://redis:6379
+
+      # Vector Store
+      - CHROMA_PERSIST_DIR=/app/data/chroma
+
+      # API Keys (load from .env file)
+      - ANTHROPIC_API_KEY=${ANTHROPIC_API_KEY:-}
+      - SLACK_BOT_TOKEN=${SLACK_BOT_TOKEN:-}
+      - GITHUB_TOKEN=${GITHUB_TOKEN:-}
+    volumes:
+      # Mount source code for hot reload in development
+      - ./src:/app/src
+      - ./tests:/app/tests
+      - ./scripts:/app/scripts
+      # Persistent data
+      - app_data:/app/data
+    depends_on:
+      postgres:
+        condition: service_healthy
+      redis:
+        condition: service_healthy
+      chromadb:
+        condition: service_healthy
+    networks:
+      - coordination-network
+    # Development: enable auto-reload
+    command: uvicorn src.main:app --host 0.0.0.0 --port 8000 --reload
+
+volumes:
+  postgres_data:
+    driver: local
+  redis_data:
+    driver: local
+  chroma_data:
+    driver: local
+  app_data:
+    driver: local
+
+networks:
+  coordination-network:
+    driver: bridge
