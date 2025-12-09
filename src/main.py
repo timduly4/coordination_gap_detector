@@ -9,6 +9,8 @@ from fastapi import FastAPI
 from fastapi.middleware.cors import CORSMiddleware
 
 from src.config import get_settings
+from src.db.postgres import check_db_connection
+from src.db.vector_store import get_vector_store
 
 # Configure logging
 logging.basicConfig(
@@ -79,18 +81,18 @@ def create_app() -> FastAPI:
 
         # Check Postgres
         try:
-            # Basic check - will be enhanced when db connections are added
+            pg_connected = await check_db_connection()
             health_status["services"]["postgres"] = {
-                "status": "not_configured",
+                "status": "connected" if pg_connected else "disconnected",
                 "url": settings.postgres_url.split("@")[-1] if "@" in settings.postgres_url else "not_set"
             }
         except Exception as e:
             health_status["services"]["postgres"] = {"status": "error", "message": str(e)}
 
-        # Check Redis
+        # Check Redis (TODO: implement Redis connection check in Milestone 1D+)
         try:
             health_status["services"]["redis"] = {
-                "status": "not_configured",
+                "status": "not_implemented",
                 "url": settings.redis_url
             }
         except Exception as e:
@@ -98,8 +100,13 @@ def create_app() -> FastAPI:
 
         # Check ChromaDB
         try:
+            vector_store = get_vector_store()
+            chroma_connected = vector_store.check_connection()
+            doc_count = vector_store.get_collection_count()
             health_status["services"]["chromadb"] = {
-                "status": "not_configured",
+                "status": "connected" if chroma_connected else "disconnected",
+                "collection": vector_store.collection_name,
+                "document_count": doc_count,
                 "persist_dir": settings.chroma_persist_dir
             }
         except Exception as e:
@@ -107,7 +114,7 @@ def create_app() -> FastAPI:
 
         # Overall status
         service_statuses = [svc.get("status") for svc in health_status["services"].values()]
-        if "error" in service_statuses:
+        if "error" in service_statuses or "disconnected" in service_statuses:
             health_status["status"] = "degraded"
 
         return health_status
