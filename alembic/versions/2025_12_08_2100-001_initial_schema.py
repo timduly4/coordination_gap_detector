@@ -46,7 +46,7 @@ def upgrade() -> None:
         sa.Column("timestamp", sa.DateTime(), nullable=False),
         sa.Column("created_at", sa.DateTime(), nullable=False),
         sa.Column("updated_at", sa.DateTime(), nullable=False),
-        sa.Column("metadata", sa.JSON(), nullable=True),
+        sa.Column("message_metadata", sa.JSON(), nullable=True),
         sa.Column("embedding_id", sa.String(length=255), nullable=True),
         sa.ForeignKeyConstraint(
             ["source_id"],

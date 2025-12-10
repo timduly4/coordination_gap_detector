@@ -61,7 +61,7 @@ class Message(Base):
     )
 
     # Additional metadata stored as JSON
-    metadata = Column(JSON, nullable=True)  # reactions, mentions, attachments, etc.
+    message_metadata = Column(JSON, nullable=True)  # reactions, mentions, attachments, etc.
 
     # Embedding reference (will be in ChromaDB)
     embedding_id = Column(String(255), nullable=True, index=True)  # Reference to vector store
