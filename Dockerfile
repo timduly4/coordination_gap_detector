@@ -22,8 +22,8 @@ COPY pyproject.toml README.md ./
 # Copy source code (needed for package installation)
 COPY src/ ./src/
 
-# Install the package and its dependencies
-RUN uv pip install --system .
+# Install the package and its dependencies (including dev dependencies for testing)
+RUN uv pip install --system ".[dev]"
 
 # Stage 2: Runtime
 FROM python:3.11-slim
@@ -45,6 +45,10 @@ COPY --from=builder /usr/local/bin /usr/local/bin
 
 # Copy application code
 COPY --chown=appuser:appuser . .
+
+# Create directories for test artifacts with proper permissions
+RUN mkdir -p /app/.pytest_cache /app/htmlcov && \
+    chown -R appuser:appuser /app/.pytest_cache /app/htmlcov
 
 # Switch to non-root user
 USER appuser
