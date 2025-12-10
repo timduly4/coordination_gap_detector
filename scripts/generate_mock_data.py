@@ -121,10 +121,11 @@ async def insert_mock_messages(
         Number of messages inserted
     """
     count = 0
+    source_id = source.id  # Get ID before loop to avoid detachment issues
 
     for mock_msg in mock_messages:
         message = Message(
-            source_id=source.id,
+            source_id=source_id,
             content=mock_msg.content,
             external_id=mock_msg.external_id,
             author=mock_msg.author,
@@ -136,7 +137,7 @@ async def insert_mock_messages(
         db.add(message)
         count += 1
 
-    await db.commit()
+    # Note: Commit is done by caller to avoid session detachment issues
     return count
 
 
@@ -192,6 +193,9 @@ async def generate_mock_data(scenarios: List[str], clear: bool = False) -> None:
             count = await insert_mock_messages(db, source, messages)
             print(f"✓ Inserted {count} messages")
             total_messages += count
+
+        # Commit all messages at once
+        await db.commit()
 
         print()
         print(f"{'=' * 60}")
