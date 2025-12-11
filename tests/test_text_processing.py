@@ -140,14 +140,14 @@ class TestChunkText:
     def test_chunk_overlap(self):
         """Test that chunks have proper overlap."""
         text = "Word " * 200
-        chunks = chunk_text(text, chunk_size=100, overlap=20)
+        chunks = chunk_text(text, chunk_size=100, overlap=20, min_chunk_size=10)
         # Check that there's some content overlap
         assert len(chunks) > 1
 
     def test_empty_text(self):
         """Test chunking empty text."""
         chunks = chunk_text("")
-        assert chunks == [""]
+        assert chunks == []
 
     def test_min_chunk_size(self):
         """Test minimum chunk size filtering."""

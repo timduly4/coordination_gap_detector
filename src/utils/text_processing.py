@@ -120,8 +120,11 @@ def chunk_text(
         >>> len(chunks) > 1
         True
     """
-    if not text or len(text) <= chunk_size:
-        return [text] if text else []
+    if not text:
+        return []
+
+    if len(text) <= chunk_size:
+        return [text]
 
     chunks = []
     start = 0
@@ -152,9 +155,15 @@ def chunk_text(
             chunks.append(chunk)
 
         # Move start position (with overlap)
-        start = end - overlap
+        # Ensure we always make forward progress to prevent infinite loops
+        next_start = end - overlap
+        if next_start <= start:
+            # If overlap is too large, just move forward by at least 1 character
+            next_start = start + max(1, chunk_size // 2)
 
-        # Prevent infinite loop
+        start = next_start
+
+        # Stop if we've reached or passed the end
         if start >= len(text):
             break
 
