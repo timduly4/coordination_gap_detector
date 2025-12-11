@@ -64,11 +64,41 @@ cp .env.example .env
 ### Start Infrastructure
 
 ```bash
-# Start required services (PostgreSQL, Redis, Elasticsearch, Kafka)
+# Start required services (PostgreSQL, Redis, ChromaDB, Redis)
 docker compose up -d
 
 # Run database migrations
-uv run alembic upgrade head
+docker compose exec api alembic upgrade head
+```
+
+### Generate Mock Data (Development)
+
+For development and testing, you can generate realistic Slack conversation data:
+
+```bash
+# Generate all mock conversation scenarios
+docker compose exec api python scripts/generate_mock_data.py --scenarios all
+
+# Generate specific scenarios
+docker compose exec api python scripts/generate_mock_data.py --scenarios oauth_discussion decision_making
+
+# Clear existing data before generating
+docker compose exec api python scripts/generate_mock_data.py --scenarios all --clear
+```
+
+**Available Mock Scenarios:**
+- `oauth_discussion` - OAuth implementation discussion showing potential duplicate work (8 messages)
+- `decision_making` - Team decision made without key stakeholders (5 messages)
+- `bug_report` - Bug report and resolution workflow (5 messages)
+- `feature_planning` - Cross-team feature planning coordination (6 messages)
+
+**Verify Data:**
+```bash
+# Check message count in database
+docker compose exec postgres psql -U coordination_user -d coordination -c "SELECT COUNT(*) FROM messages;"
+
+# View messages by channel
+docker compose exec postgres psql -U coordination_user -d coordination -c "SELECT channel, COUNT(*) FROM messages GROUP BY channel;"
 ```
 
 ### Run the Application
