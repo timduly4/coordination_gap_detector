@@ -144,15 +144,19 @@ coordination-gap-detector/
 
 ```bash
 # Run all tests
-pytest
+uv run pytest
 
 # Run with coverage
-pytest --cov=src --cov-report=html
+uv run pytest --cov=src --cov-report=html
 
-# Run specific test modules
-pytest tests/test_detection/
-pytest tests/test_ranking/
+# Run specific test module
+uv run pytest tests/test_vector_store.py -v
+
+# Run in Docker
+docker compose exec api pytest
 ```
+
+For comprehensive testing documentation including test structure, options, and troubleshooting, see **[TESTING.md](./TESTING.md)**.
 
 ### Code Quality
 
