@@ -281,7 +281,7 @@ async def generate_mock_data(scenarios: List[str], clear: bool = False, skip_emb
         if not skip_embeddings:
             print()
             print("Test semantic search:")
-            print('  python -c "from src.db.vector_store import get_vector_store; vs = get_vector_store(); print(vs.search(\\"OAuth\\", limit=3))"')
+            print('  docker compose exec api python -c "from src.db.vector_store import get_vector_store; vs = get_vector_store(); print(vs.search(\\"OAuth\\", limit=3))"')
 
 
 def main():
