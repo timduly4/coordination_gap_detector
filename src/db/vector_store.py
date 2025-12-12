@@ -2,12 +2,13 @@
 ChromaDB vector store client for semantic search.
 """
 import logging
-from typing import Optional
+from typing import Any, Dict, List, Optional, Tuple
 
 import chromadb
 from chromadb.config import Settings as ChromaSettings
 
 from src.config import get_settings
+from src.models.embeddings import get_embedding_generator
 
 logger = logging.getLogger(__name__)
 
@@ -15,6 +16,12 @@ logger = logging.getLogger(__name__)
 class VectorStore:
     """
     ChromaDB client for storing and searching message embeddings.
+
+    This class provides a complete interface for:
+    - Inserting documents with embeddings
+    - Semantic similarity search
+    - Batch operations
+    - Metadata filtering
     """
 
     def __init__(self) -> None:
@@ -34,7 +41,7 @@ class VectorStore:
             self.client = chromadb.HttpClient(
                 host=chroma_host,
                 port=8000,
-                settings=ChromaSettings(anonymized_telemetry=False)
+                settings=ChromaSettings(anonymized_telemetry=False),
             )
         else:
             # Persistent client for local development
@@ -57,6 +64,9 @@ class VectorStore:
         except Exception as e:
             logger.error(f"Failed to initialize ChromaDB collection: {e}")
             raise
+
+        # Initialize embedding generator
+        self.embedding_generator = get_embedding_generator()
 
     def check_connection(self) -> bool:
         """
@@ -81,6 +91,263 @@ class VectorStore:
         except Exception as e:
             logger.error(f"Failed to get collection count: {e}")
             return 0
+
+    def insert(
+        self,
+        message_id: int,
+        content: str,
+        metadata: Optional[Dict[str, Any]] = None,
+    ) -> str:
+        """
+        Insert a single document into the vector store.
+
+        Args:
+            message_id: Database message ID
+            content: Text content to embed and store
+            metadata: Optional metadata to store with the document
+
+        Returns:
+            Embedding ID (string representation of message_id)
+
+        Raises:
+            Exception: If insertion fails
+        """
+        embedding_id = f"msg_{message_id}"
+
+        try:
+            # Generate embedding
+            embedding = self.embedding_generator.generate_embedding(content)
+
+            # Prepare metadata
+            doc_metadata = metadata or {}
+            doc_metadata["message_id"] = message_id
+
+            # Insert into ChromaDB
+            self.collection.add(
+                ids=[embedding_id],
+                embeddings=[embedding],
+                documents=[content],
+                metadatas=[doc_metadata],
+            )
+
+            logger.debug(f"Inserted document {embedding_id} into vector store")
+            return embedding_id
+
+        except Exception as e:
+            logger.error(f"Failed to insert document {embedding_id}: {e}")
+            raise
+
+    def insert_batch(
+        self,
+        message_ids: List[int],
+        contents: List[str],
+        metadatas: Optional[List[Dict[str, Any]]] = None,
+    ) -> List[str]:
+        """
+        Insert multiple documents into the vector store in batch.
+
+        Args:
+            message_ids: List of database message IDs
+            contents: List of text contents
+            metadatas: Optional list of metadata dicts
+
+        Returns:
+            List of embedding IDs
+
+        Raises:
+            ValueError: If input lists have different lengths
+            Exception: If batch insertion fails
+        """
+        if len(message_ids) != len(contents):
+            raise ValueError("message_ids and contents must have the same length")
+
+        if metadatas and len(metadatas) != len(message_ids):
+            raise ValueError("metadatas must have the same length as message_ids")
+
+        try:
+            # Generate embedding IDs
+            embedding_ids = [f"msg_{msg_id}" for msg_id in message_ids]
+
+            # Generate embeddings in batch
+            embeddings = self.embedding_generator.generate_embeddings(contents, batch_size=32)
+
+            # Prepare metadata
+            if metadatas:
+                doc_metadatas = []
+                for i, metadata in enumerate(metadatas):
+                    meta = metadata.copy()
+                    meta["message_id"] = message_ids[i]
+                    doc_metadatas.append(meta)
+            else:
+                doc_metadatas = [{"message_id": msg_id} for msg_id in message_ids]
+
+            # Insert into ChromaDB
+            self.collection.add(
+                ids=embedding_ids,
+                embeddings=embeddings,
+                documents=contents,
+                metadatas=doc_metadatas,
+            )
+
+            logger.info(f"Inserted {len(embedding_ids)} documents into vector store")
+            return embedding_ids
+
+        except Exception as e:
+            logger.error(f"Failed to insert batch: {e}")
+            raise
+
+    def search(
+        self,
+        query: str,
+        limit: int = 10,
+        threshold: float = 0.0,
+        filter_metadata: Optional[Dict[str, Any]] = None,
+    ) -> List[Tuple[str, str, float, Dict[str, Any]]]:
+        """
+        Search for similar documents using semantic similarity.
+
+        Args:
+            query: Query text to search for
+            limit: Maximum number of results to return
+            threshold: Minimum similarity score (0.0 to 1.0)
+            filter_metadata: Optional metadata filters
+
+        Returns:
+            List of tuples: (embedding_id, content, score, metadata)
+
+        Note:
+            ChromaDB returns similarity scores, where higher is better.
+            Scores are cosine similarity (range: -1 to 1, normalized embeddings: 0 to 1)
+        """
+        try:
+            # Generate query embedding
+            query_embedding = self.embedding_generator.generate_embedding(query)
+
+            # Build where clause for metadata filtering
+            where = filter_metadata if filter_metadata else None
+
+            # Query ChromaDB
+            results = self.collection.query(
+                query_embeddings=[query_embedding],
+                n_results=limit,
+                where=where,
+                include=["documents", "metadatas", "distances"],
+            )
+
+            # Process results
+            output = []
+            if results and results["ids"] and len(results["ids"]) > 0:
+                ids = results["ids"][0]
+                documents = results["documents"][0] if results["documents"] else []
+                metadatas = results["metadatas"][0] if results["metadatas"] else []
+                distances = results["distances"][0] if results["distances"] else []
+
+                for i in range(len(ids)):
+                    # Convert distance to similarity score
+                    # ChromaDB returns L2 distance, convert to cosine similarity
+                    # For normalized embeddings: similarity = 1 - (distance^2 / 2)
+                    distance = distances[i] if i < len(distances) else 0
+                    similarity = 1 - (distance * distance / 2)
+
+                    # Apply threshold filter
+                    if similarity >= threshold:
+                        output.append(
+                            (
+                                ids[i],
+                                documents[i] if i < len(documents) else "",
+                                similarity,
+                                metadatas[i] if i < len(metadatas) else {},
+                            )
+                        )
+
+            logger.debug(f"Search returned {len(output)} results (threshold: {threshold})")
+            return output
+
+        except Exception as e:
+            logger.error(f"Failed to search vector store: {e}")
+            raise
+
+    def delete(self, embedding_id: str) -> bool:
+        """
+        Delete a document from the vector store.
+
+        Args:
+            embedding_id: ID of the document to delete
+
+        Returns:
+            True if deletion was successful, False otherwise
+        """
+        try:
+            self.collection.delete(ids=[embedding_id])
+            logger.debug(f"Deleted document {embedding_id} from vector store")
+            return True
+        except Exception as e:
+            logger.error(f"Failed to delete document {embedding_id}: {e}")
+            return False
+
+    def delete_batch(self, embedding_ids: List[str]) -> bool:
+        """
+        Delete multiple documents from the vector store.
+
+        Args:
+            embedding_ids: List of embedding IDs to delete
+
+        Returns:
+            True if deletion was successful, False otherwise
+        """
+        try:
+            self.collection.delete(ids=embedding_ids)
+            logger.info(f"Deleted {len(embedding_ids)} documents from vector store")
+            return True
+        except Exception as e:
+            logger.error(f"Failed to delete batch: {e}")
+            return False
+
+    def clear_collection(self) -> bool:
+        """
+        Clear all documents from the collection.
+
+        Returns:
+            True if successful, False otherwise
+        """
+        try:
+            # Delete and recreate the collection
+            self.client.delete_collection(name=self.collection_name)
+            self.collection = self.client.get_or_create_collection(
+                name=self.collection_name,
+                metadata={"description": "Messages from all sources for coordination gap detection"},
+            )
+            logger.warning(f"Cleared all documents from collection '{self.collection_name}'")
+            return True
+        except Exception as e:
+            logger.error(f"Failed to clear collection: {e}")
+            return False
+
+    def get_by_id(self, embedding_id: str) -> Optional[Tuple[str, Dict[str, Any]]]:
+        """
+        Retrieve a document by its embedding ID.
+
+        Args:
+            embedding_id: ID of the document to retrieve
+
+        Returns:
+            Tuple of (content, metadata) if found, None otherwise
+        """
+        try:
+            result = self.collection.get(
+                ids=[embedding_id],
+                include=["documents", "metadatas"],
+            )
+
+            if result and result["ids"] and len(result["ids"]) > 0:
+                content = result["documents"][0] if result["documents"] else ""
+                metadata = result["metadatas"][0] if result["metadatas"] else {}
+                return (content, metadata)
+
+            return None
+        except Exception as e:
+            logger.error(f"Failed to get document {embedding_id}: {e}")
+            return None
 
 
 # Global vector store instance (singleton pattern)

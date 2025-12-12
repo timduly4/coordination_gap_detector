@@ -50,6 +50,9 @@ dependencies = [
     # Search & Ranking
     "elasticsearch>=8.12.0",
     "sentence-transformers>=2.3.0",
+    "torch>=2.0.0,<2.2.0",  # Pin torch to version with macOS Intel support
+    "numpy<2.0.0",  # Required for torch 2.1.x compatibility
+    "transformers>=4.35.0,<4.40.0",  # Compatible with torch 2.1.x
 
     # Data Ingestion & Integration
     "slack-sdk>=3.26.0",
