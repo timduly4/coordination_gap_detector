@@ -124,6 +124,8 @@ The API will be available at:
 coordination-gap-detector/
 ├── src/                    # Main application code
 │   ├── api/               # FastAPI routes and endpoints
+│   │   └── routes/        # API route modules (search, gaps, etc.)
+│   ├── services/          # Business logic layer
 │   ├── detection/         # Gap detection algorithms
 │   ├── ranking/           # Search quality & ranking
 │   ├── search/            # Multi-source search
@@ -134,6 +136,9 @@ coordination-gap-detector/
 │   ├── infrastructure/    # Observability, rate limiting
 │   └── utils/             # Utilities
 ├── tests/                 # Test suite
+│   ├── test_api/          # API endpoint tests
+│   ├── test_detection/    # Detection algorithm tests
+│   └── test_integration/  # Integration tests
 ├── notebooks/             # Jupyter notebooks for analysis
 ├── scripts/               # Utility scripts
 ├── k8s/                   # Kubernetes manifests
@@ -149,11 +154,23 @@ uv run pytest
 # Run with coverage
 uv run pytest --cov=src --cov-report=html
 
-# Run specific test module
-uv run pytest tests/test_vector_store.py -v
+# Run specific test modules
+uv run pytest tests/test_api/test_search.py -v          # Search API tests
+uv run pytest tests/test_vector_store.py -v             # Vector store tests
+uv run pytest tests/test_embeddings.py -v               # Embedding tests
+
+# Run tests by category
+uv run pytest tests/test_api/ -v                        # All API tests
+uv run pytest tests/test_integration/ -v                # Integration tests
 
 # Run in Docker
 docker compose exec api pytest
+
+# Run with verbose output
+docker compose exec api pytest -v
+
+# Run specific test with Docker
+docker compose exec api pytest tests/test_api/test_search.py::TestSearchEndpoint::test_search_basic_query -v
 ```
 
 For comprehensive testing documentation including test structure, options, and troubleshooting, see **[TESTING.md](./TESTING.md)**.
@@ -185,7 +202,81 @@ Key configuration areas:
 
 Once running, visit http://localhost:8000/docs for interactive API documentation.
 
-### Example: Detect Coordination Gaps
+### Available Endpoints
+
+#### Search API
+
+**POST /api/v1/search/** - Semantic search across messages
+
+Search for messages using semantic similarity with flexible filtering options.
+
+```bash
+curl -X POST http://localhost:8000/api/v1/search/ \
+  -H "Content-Type: application/json" \
+  -d '{
+    "query": "OAuth implementation",
+    "limit": 5,
+    "threshold": 0.7,
+    "source_types": ["slack"],
+    "channels": ["#engineering"]
+  }'
+```
+
+**Response:**
+```json
+{
+  "results": [
+    {
+      "content": "Starting OAuth2 integration...",
+      "source": "slack",
+      "channel": "#engineering",
+      "author": "alice@demo.com",
+      "timestamp": "2024-12-01T09:00:00Z",
+      "score": 0.89,
+      "message_id": 123,
+      "external_id": "slack_msg_abc",
+      "message_metadata": {}
+    }
+  ],
+  "total": 1,
+  "query": "OAuth implementation",
+  "query_time_ms": 45,
+  "threshold": 0.7
+}
+```
+
+**Parameters:**
+- `query` (required): Search query text (1-1000 characters)
+- `limit` (optional): Maximum results to return (1-100, default: 10)
+- `threshold` (optional): Minimum similarity score (0.0-1.0, default: 0.0)
+- `source_types` (optional): Filter by source types (e.g., ["slack", "github"])
+- `channels` (optional): Filter by specific channels
+- `date_from` (optional): Filter messages from this date (ISO format)
+- `date_to` (optional): Filter messages until this date (ISO format)
+
+**GET /api/v1/search/health** - Search service health check
+
+Check the health and status of the search service and its dependencies.
+
+```bash
+curl http://localhost:8000/api/v1/search/health
+```
+
+**Response:**
+```json
+{
+  "status": "healthy",
+  "vector_store": {
+    "connected": true,
+    "collection": "coordination_messages",
+    "document_count": 24
+  }
+}
+```
+
+#### Gap Detection API (Coming Soon)
+
+**POST /api/v1/gaps/detect** - Detect coordination gaps
 
 ```bash
 POST /api/v1/gaps/detect
@@ -197,16 +288,7 @@ POST /api/v1/gaps/detect
 }
 ```
 
-### Example: Search Across Sources
-
-```bash
-POST /api/v1/search
-{
-  "query": "authentication implementation",
-  "sources": ["slack", "github", "google_docs"],
-  "ranking_strategy": "ml_hybrid"
-}
-```
+*Note: Gap detection endpoints are planned for future milestones.*
 
 ## Deployment
 
