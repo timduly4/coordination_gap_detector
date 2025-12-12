@@ -239,6 +239,7 @@ async def generate_mock_data(scenarios: List[str], clear: bool = False, skip_emb
 
         # Ensure Slack source exists
         source = await ensure_slack_source(db)
+        source_id = source.id  # Save ID before commit to avoid detachment issues
         print()
 
         # Generate and insert messages for each scenario
@@ -260,7 +261,7 @@ async def generate_mock_data(scenarios: List[str], clear: bool = False, skip_emb
             print("Generating embeddings for vector store...")
             # Fetch all messages that were just inserted
             result = await db.execute(
-                select(Message).where(Message.source_id == source.id)
+                select(Message).where(Message.source_id == source_id)
             )
             all_messages = result.scalars().all()
 
