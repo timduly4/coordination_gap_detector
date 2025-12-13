@@ -87,10 +87,34 @@ docker compose exec api python scripts/generate_mock_data.py --scenarios all --c
 ```
 
 **Available Mock Scenarios:**
-- `oauth_discussion` - OAuth implementation discussion showing potential duplicate work (8 messages)
-- `decision_making` - Team decision made without key stakeholders (5 messages)
-- `bug_report` - Bug report and resolution workflow (5 messages)
-- `feature_planning` - Cross-team feature planning coordination (6 messages)
+
+1. **oauth_discussion** (8 messages)
+   - **Purpose**: Demonstrates potential duplicate work detection
+   - **Content**: Two teams (platform and auth) independently working on OAuth2 integration
+   - **Channels**: #platform, #auth-team
+   - **Gap Type**: Duplicate Work
+   - **Key Insights**: Shows parallel efforts without coordination, different approaches to same problem
+
+2. **decision_making** (5 messages)
+   - **Purpose**: Illustrates missing context and stakeholder exclusion
+   - **Content**: Architecture decision made without security team input
+   - **Channels**: #engineering
+   - **Gap Type**: Missing Context
+   - **Key Insights**: Critical decisions made without required stakeholders
+
+3. **bug_report** (5 messages)
+   - **Purpose**: Demonstrates effective coordination (positive example)
+   - **Content**: Bug report, diagnosis, and resolution with proper handoffs
+   - **Channels**: #frontend
+   - **Gap Type**: None (baseline for comparison)
+   - **Key Insights**: Shows what good coordination looks like
+
+4. **feature_planning** (6 messages)
+   - **Purpose**: Shows cross-team collaboration patterns
+   - **Content**: Feature planning across platform, mobile, and backend teams
+   - **Channels**: #product
+   - **Gap Type**: Potential dependency issues
+   - **Key Insights**: Multiple teams with dependencies, coordination required
 
 **Verify Data:**
 ```bash
@@ -289,6 +313,218 @@ POST /api/v1/gaps/detect
 ```
 
 *Note: Gap detection endpoints are planned for future milestones.*
+
+## Troubleshooting
+
+### Common Issues and Solutions
+
+#### Docker Services Not Starting
+
+**Problem**: `docker compose up` fails or services don't start
+
+**Solutions**:
+```bash
+# Check if ports are already in use
+lsof -i :8000  # API port
+lsof -i :5432  # PostgreSQL
+lsof -i :6379  # Redis
+lsof -i :8001  # ChromaDB
+
+# Stop conflicting services or change ports in docker-compose.yml
+
+# Remove old containers and volumes
+docker compose down -v
+docker compose up -d
+
+# Check logs for specific service
+docker compose logs api
+docker compose logs postgres
+```
+
+#### Database Connection Errors
+
+**Problem**: `asyncpg.exceptions.InvalidCatalogNameError` or connection refused
+
+**Solutions**:
+```bash
+# Verify PostgreSQL is running
+docker compose ps postgres
+
+# Check database exists
+docker compose exec postgres psql -U coordination_user -l
+
+# Recreate database
+docker compose exec postgres psql -U coordination_user -c "DROP DATABASE IF EXISTS coordination;"
+docker compose exec postgres psql -U coordination_user -c "CREATE DATABASE coordination;"
+
+# Run migrations
+docker compose exec api alembic upgrade head
+```
+
+#### ChromaDB Connection Issues
+
+**Problem**: Vector store operations fail or timeout
+
+**Solutions**:
+```bash
+# Check ChromaDB service status
+docker compose logs chromadb
+
+# Verify ChromaDB is accessible
+curl http://localhost:8001/api/v1/heartbeat
+
+# Restart ChromaDB service
+docker compose restart chromadb
+
+# Clear and reinitialize ChromaDB data
+rm -rf data/chroma/*
+docker compose restart chromadb
+```
+
+#### Search Returns No Results
+
+**Problem**: Search queries return empty results even with mock data
+
+**Solutions**:
+```bash
+# Verify messages in database
+docker compose exec postgres psql -U coordination_user -d coordination -c "SELECT COUNT(*) FROM messages;"
+
+# Check vector store document count
+curl http://localhost:8000/api/v1/search/health
+
+# Regenerate mock data and embeddings
+docker compose exec api python scripts/generate_mock_data.py --scenarios all --clear
+
+# Verify embeddings were created
+curl http://localhost:8000/health/detailed
+```
+
+#### Import Errors or Module Not Found
+
+**Problem**: `ModuleNotFoundError` when running tests or application
+
+**Solutions**:
+```bash
+# Ensure dependencies are installed
+uv pip install -e ".[dev]"
+
+# Verify virtual environment is activated
+which python  # Should point to .venv/bin/python
+
+# Reinstall dependencies
+rm -rf .venv
+uv venv
+source .venv/bin/activate
+uv pip install -e ".[dev]"
+```
+
+#### Tests Failing
+
+**Problem**: Tests fail with database or fixture errors
+
+**Solutions**:
+```bash
+# Run tests with verbose output
+uv run pytest -v
+
+# Run specific test file
+uv run pytest tests/test_api/test_search.py -v
+
+# Clear pytest cache
+rm -rf .pytest_cache
+pytest --cache-clear
+
+# Check test database connection (uses SQLite in-memory by default)
+uv run pytest tests/ -v --tb=short
+```
+
+#### API Returns 500 Errors
+
+**Problem**: API endpoints return internal server errors
+
+**Solutions**:
+```bash
+# Check API logs
+docker compose logs api --tail=50 --follow
+
+# Verify all services are healthy
+curl http://localhost:8000/health/detailed
+
+# Restart API service
+docker compose restart api
+
+# Check for recent code changes that might have broken something
+git diff HEAD~1
+```
+
+#### Slow Search Performance
+
+**Problem**: Search queries take too long to complete
+
+**Solutions**:
+1. **Check document count**: Large vector stores may need optimization
+   ```bash
+   curl http://localhost:8000/api/v1/search/health
+   ```
+
+2. **Reduce search limit**: Use smaller limit values for faster results
+   ```json
+   {"query": "test", "limit": 5}
+   ```
+
+3. **Increase similarity threshold**: Filter out low-relevance results
+   ```json
+   {"query": "test", "threshold": 0.7}
+   ```
+
+4. **Monitor resource usage**:
+   ```bash
+   docker stats
+   ```
+
+#### Environment Variable Issues
+
+**Problem**: Application can't find configuration or API keys
+
+**Solutions**:
+```bash
+# Verify .env file exists
+ls -la .env
+
+# Check environment variables are loaded
+docker compose exec api env | grep ANTHROPIC
+
+# Recreate .env from template
+cp .env.example .env
+# Edit .env with your actual values
+
+# Restart services to pick up new env vars
+docker compose down
+docker compose up -d
+```
+
+### Getting Help
+
+If you encounter issues not covered here:
+
+1. **Check logs**: `docker compose logs <service-name>`
+2. **Review documentation**: See [CLAUDE.md](./CLAUDE.md) and [docs/API.md](./docs/API.md)
+3. **Run health checks**: `curl http://localhost:8000/health/detailed`
+4. **Check GitHub issues**: [github.com/timduly4/coordination_gap_detector/issues](https://github.com/timduly4/coordination_gap_detector/issues)
+5. **Verify prerequisites**: Python 3.11+, Docker, UV installed correctly
+
+### Debug Mode
+
+Enable debug logging for more detailed output:
+
+```bash
+# In .env file
+LOG_LEVEL=DEBUG
+
+# Restart services
+docker compose restart api
+```
 
 ## Deployment
 
