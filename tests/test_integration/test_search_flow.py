@@ -338,8 +338,8 @@ class TestVectorStoreIntegration:
         # Embed messages in vector store
         for msg in messages:
             await async_db_session.refresh(msg)
-            vector_store.add_document(
-                doc_id=f"msg_{msg.id}",
+            vector_store.insert(
+                message_id=msg.id,
                 content=msg.content,
                 metadata={
                     "message_id": msg.id,
@@ -460,29 +460,37 @@ class TestErrorHandlingIntegration:
     """Integration tests for error handling across components."""
 
     @pytest.mark.asyncio
-    async def test_database_error_handling(
+    async def test_service_error_handling(
         self,
         app,
         client: TestClient,
         async_db_session: AsyncSession,
-        mock_vector_store,
     ):
         """
-        Test that database errors are handled gracefully.
+        Test that service-level errors are handled gracefully.
 
-        Verifies that errors in the database layer are caught
+        Verifies that errors in the search service layer are caught
         and returned as appropriate HTTP responses.
         """
+        from unittest.mock import MagicMock
 
-        def override_get_db():
-            # Simulate database error
-            raise Exception("Database connection failed")
+        # Create a mock vector store that raises an error
+        mock_store = MagicMock()
+        mock_store.search.side_effect = Exception("Vector store error")
 
-        def override_get_vector_db():
-            return mock_vector_store
+        # Create a service with the failing mock store
+        from src.services.search_service import SearchService
+        error_service = SearchService(mock_store)
 
+        async def override_get_db() -> AsyncGenerator[AsyncSession, None]:
+            yield async_db_session
+
+        def override_get_service():
+            return error_service
+
+        from src.api.routes.search import get_service
         app.dependency_overrides[get_db] = override_get_db
-        app.dependency_overrides[get_vector_db] = override_get_vector_db
+        app.dependency_overrides[get_service] = override_get_service
 
         try:
             response = client.post(
