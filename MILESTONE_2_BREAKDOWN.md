@@ -35,7 +35,7 @@ coordination-gap-detector/
 - [ ] Update .env.example with ES configuration
 
 ### PR Description Template:
-```markdown
+```
 ## Elasticsearch Integration
 
 Add Elasticsearch for keyword search and BM25 ranking.
@@ -53,6 +53,7 @@ Add Elasticsearch for keyword search and BM25 ranking.
 - [ ] Health endpoint shows ES connectivity
 - [ ] Can create indices and mappings
 - [ ] Connection error handling works
+```
 
 ### Index Mapping
 ```json
@@ -74,7 +75,6 @@ Add Elasticsearch for keyword search and BM25 ranking.
 
 ### Next Steps
 - Implement BM25 scoring (PR 2B)
-```
 
 **Commit Messages:**
 ```
@@ -121,7 +121,7 @@ tests/
 - [ ] Add integration tests with ES
 
 ### PR Description Template:
-```markdown
+```
 ## BM25 Scoring Implementation
 
 Probabilistic ranking function for keyword-based search.
@@ -161,7 +161,6 @@ from src.ranking.scoring import BM25Scorer
 scorer = BM25Scorer(k1=1.5, b=0.75)
 score = scorer.score(query="OAuth implementation", document=doc)
 # Returns BM25 relevance score
-```
 ```
 
 **Commit Messages:**
@@ -209,7 +208,7 @@ tests/
 - [ ] Add performance benchmarks
 
 ### PR Description Template:
-```markdown
+```
 ## Hybrid Search Implementation
 
 Combines semantic similarity and keyword matching for better search quality.
@@ -274,7 +273,6 @@ curl -X POST http://localhost:8000/api/v1/search \
   }]
 }
 ```
-```
 
 **Commit Messages:**
 ```
@@ -320,7 +318,7 @@ tests/
 - [ ] Add metric calculation examples
 
 ### PR Description Template:
-```markdown
+```
 ## Ranking Metrics Implementation
 
 Information retrieval metrics for evaluating search quality.
@@ -392,7 +390,6 @@ mrr = calculate_mrr(queries)  # = 0.75
 relevance_scores = [3, 2, 1, 0]  # Graded relevance
 ndcg = calculate_ndcg(relevance_scores, k=4)
 ```
-```
 
 **Commit Messages:**
 ```
@@ -437,7 +434,7 @@ tests/
 - [ ] Document all features
 
 ### PR Description Template:
-```markdown
+```
 ## Ranking Feature Engineering
 
 40+ ranking signals for improved search quality.
@@ -521,7 +518,6 @@ features = extractor.extract(
 #   ...
 # }
 ```
-```
 
 **Commit Messages:**
 ```
@@ -571,7 +567,7 @@ tests/
 - [ ] Write evaluation documentation
 
 ### PR Description Template:
-```markdown
+```
 ## Evaluation Framework
 
 Offline evaluation system for ranking quality assessment.
@@ -653,7 +649,6 @@ POST /api/v1/evaluate
   "metrics": ["mrr", "ndcg@10"]
 }
 ```
-```
 
 **Commit Messages:**
 ```
@@ -703,7 +698,7 @@ pytest.ini                       # Updated configuration
 - [ ] Create feature importance analysis
 
 ### PR Description Template:
-```markdown
+```
 ## Milestone 2: Testing & Documentation
 
 Comprehensive tests and documentation for ranking and search quality.
@@ -759,6 +754,7 @@ Comprehensive tests and documentation for ranking and search quality.
 - API examples with hybrid search
 - Ranking strategy selection guide
 - Feature configuration examples
+```
 
 ### Example: Complete Ranking Pipeline
 ```python
