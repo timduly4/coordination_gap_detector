@@ -128,9 +128,12 @@ def create_app() -> FastAPI:
             "docs": "/docs",
         }
 
-    # TODO: Include routers from api.routes
+    # Include API routers
+    from src.api.routes import search
+    app.include_router(search.router, prefix="/api/v1/search", tags=["search"])
+
+    # TODO: Add additional routers as they are implemented
     # app.include_router(gaps.router, prefix="/api/v1/gaps", tags=["gaps"])
-    # app.include_router(search.router, prefix="/api/v1/search", tags=["search"])
     # app.include_router(insights.router, prefix="/api/v1/insights", tags=["insights"])
     # app.include_router(metrics.router, prefix="/api/v1/metrics", tags=["metrics"])
 

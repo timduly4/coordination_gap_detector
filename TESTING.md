@@ -8,8 +8,12 @@ This document provides comprehensive guidance on testing the Coordination Gap De
 - [Test Structure](#test-structure)
 - [Running Tests](#running-tests)
 - [Milestone 1E Tests](#milestone-1e-tests)
+- [Milestone 1F Tests](#milestone-1f-tests)
+- [Docker Testing](#docker-testing)
+- [Coverage Reports](#coverage-reports)
 - [Writing Tests](#writing-tests)
 - [Continuous Integration](#continuous-integration)
+- [Troubleshooting](#troubleshooting)
 
 ## Quick Start
 
@@ -46,6 +50,8 @@ tests/
 ├── test_text_processing.py         # Text utility tests
 ├── test_vector_store.py            # Vector store integration tests
 ├── test_mock_data.py               # Mock data generation tests
+├── test_api/                       # API endpoint tests
+│   └── test_search.py              # Search API endpoint tests
 ├── test_detection/                 # Gap detection tests
 ├── test_ranking/                   # Ranking algorithm tests
 ├── test_search/                    # Search functionality tests
@@ -58,6 +64,9 @@ tests/
 ### By Module
 
 ```bash
+# Search API endpoints
+uv run pytest tests/test_api/test_search.py -v
+
 # Vector store operations
 uv run pytest tests/test_vector_store.py -v
 
@@ -249,6 +258,119 @@ uv run pytest tests/test_vector_store.py tests/test_embeddings.py tests/test_tex
 
 # With coverage report
 uv run pytest tests/test_vector_store.py tests/test_embeddings.py tests/test_text_processing.py --cov=src.db.vector_store --cov=src.models.embeddings --cov=src.utils.text_processing --cov-report=term-missing
+```
+
+## Milestone 1F Tests
+
+Milestone 1F focuses on the Search API endpoint with semantic search functionality. Here's how to test these components:
+
+### Search API Tests (test_api/test_search.py)
+
+**16 test cases covering:**
+- Basic query searches with results
+- Filtering by source types and channels
+- Date range filtering
+- Empty and invalid query validation
+- Parameter validation (limit, threshold)
+- No results handling
+- Result limit enforcement
+- Result sorting by similarity score
+- Missing query parameter handling
+- Whitespace query validation
+- Health check (healthy state)
+- Health check (degraded state)
+- SearchService integration with async database
+- SearchService health check
+
+**Run all search API tests:**
+```bash
+uv run pytest tests/test_api/test_search.py -v
+```
+
+**Run specific test groups:**
+```bash
+# Test search endpoint operations
+uv run pytest tests/test_api/test_search.py::TestSearchEndpoint -v
+
+# Test health check operations
+uv run pytest tests/test_api/test_search.py::TestSearchHealthEndpoint -v
+
+# Test service integration
+uv run pytest tests/test_api/test_search.py::TestSearchServiceIntegration -v
+```
+
+**Run specific test scenarios:**
+```bash
+# Test basic search query
+uv run pytest tests/test_api/test_search.py::TestSearchEndpoint::test_search_basic_query -v
+
+# Test filtering
+uv run pytest tests/test_api/test_search.py::TestSearchEndpoint::test_search_with_filters -v
+
+# Test validation
+uv run pytest tests/test_api/test_search.py::TestSearchEndpoint::test_search_invalid_limit -v
+```
+
+**Example test output:**
+```
+tests/test_api/test_search.py::TestSearchEndpoint::test_search_basic_query PASSED
+tests/test_api/test_search.py::TestSearchEndpoint::test_search_with_filters PASSED
+tests/test_api/test_search.py::TestSearchEndpoint::test_search_with_date_range PASSED
+...
+======================= 16 passed, 11 warnings in 2.03s =======================
+```
+
+### Search Service Tests
+
+The SearchService implements the business logic for semantic search operations:
+
+**Key test areas:**
+- Multi-stage search pipeline (vector search → DB enrichment → filtering → sorting)
+- Async database integration with SQLAlchemy
+- Dependency injection with FastAPI
+- Error handling and logging
+- Health check monitoring
+
+**Run service integration tests:**
+```bash
+# Test search service with database
+uv run pytest tests/test_api/test_search.py::TestSearchServiceIntegration::test_search_service_integration -v
+
+# Test service health check
+uv run pytest tests/test_api/test_search.py::TestSearchServiceIntegration::test_search_service_health_check -v
+```
+
+### API Endpoint Testing Patterns
+
+The search API tests demonstrate proper FastAPI testing patterns:
+
+```python
+# Use dependency_overrides for mocking dependencies
+async def override_get_db() -> AsyncGenerator[AsyncSession, None]:
+    yield async_db_session
+
+app.dependency_overrides[get_db] = override_get_db
+
+try:
+    # Make API request
+    response = client.post("/api/v1/search/", json={"query": "test"})
+    assert response.status_code == 200
+finally:
+    # Clean up overrides
+    app.dependency_overrides.clear()
+```
+
+### Run All Milestone 1F Tests
+
+```bash
+# Run all search API tests
+uv run pytest tests/test_api/test_search.py -v
+
+# With coverage report
+uv run pytest tests/test_api/test_search.py --cov=src.api.routes.search --cov=src.services.search_service --cov-report=term-missing
+
+# With Docker
+docker compose exec api pytest tests/test_api/test_search.py -v
 ```
 
 ## Docker Testing
