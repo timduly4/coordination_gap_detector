@@ -77,6 +77,7 @@ Add Elasticsearch for keyword search and BM25 ranking.
 - Implement BM25 scoring (PR 2B)
 
 **Commit Messages:**
+
 ```
 feat: add elasticsearch service to docker compose
 feat: implement elasticsearch client and connection management
@@ -135,9 +136,7 @@ Probabilistic ranking function for keyword-based search.
 - Score explanations
 
 ### BM25 Formula
-```
 score(D,Q) = Σ IDF(qi) · (f(qi,D) · (k1 + 1)) / (f(qi,D) + k1 · (1 - b + b · |D|/avgdl))
-```
 
 Where:
 - `f(qi,D)` = term frequency of qi in document D
@@ -164,6 +163,7 @@ score = scorer.score(query="OAuth implementation", document=doc)
 ```
 
 **Commit Messages:**
+
 ```
 feat: implement BM25 scoring algorithm
 feat: add IDF and term frequency calculations
@@ -224,17 +224,17 @@ Combines semantic similarity and keyword matching for better search quality.
 ### Fusion Strategies
 
 **1. Reciprocal Rank Fusion (RRF)**
-```python
+
 score(d) = Σ 1/(k + rank_i(d))
-```
+
 - Combines rankings from multiple sources
 - `k=60` constant (standard value)
 - Rank-based, not score-based
 
 **2. Weighted Score Fusion**
-```python
+
 score(d) = α·semantic_score(d) + β·bm25_score(d)
-```
+
 - Default: α=0.7, β=0.3
 - Normalizes scores before combining
 
@@ -247,7 +247,6 @@ score(d) = α·semantic_score(d) + β·bm25_score(d)
 - [ ] API accepts ranking_strategy parameter
 
 ### API Example
-```bash
 curl -X POST http://localhost:8000/api/v1/search \
   -H "Content-Type: application/json" \
   -d '{
@@ -255,10 +254,8 @@ curl -X POST http://localhost:8000/api/v1/search \
     "ranking_strategy": "hybrid_rrf",
     "limit": 10
   }'
-```
 
 ### Response
-```json
 {
   "results": [{
     "content": "We decided to use Auth0...",
@@ -334,32 +331,32 @@ Information retrieval metrics for evaluating search quality.
 ### Metrics Explained
 
 **Mean Reciprocal Rank (MRR)**
-```python
+
 MRR = (1/|Q|) · Σ 1/rank_i
-```
+
 - Measures rank of first relevant result
 - Range: [0, 1], higher is better
 - Use case: Finding the best match
 
 **NDCG@k (Normalized DCG)**
-```python
+
 DCG@k = Σ (2^rel_i - 1) / log2(i + 1)
 NDCG@k = DCG@k / iDCG@k
-```
+
 - Graded relevance (not binary)
 - Position-aware with logarithmic discount
 - Range: [0, 1], higher is better
 - Use case: Ranking quality with graded judgments
 
 **Precision@k**
-```python
+
 P@k = (relevant items in top k) / k
-```
+
 
 **Recall@k**
-```python
+
 R@k = (relevant items in top k) / (total relevant items)
-```
+
 
 ### Relevance Scale
 - **3**: Highly relevant (perfect match)
@@ -376,7 +373,7 @@ R@k = (relevant items in top k) / (total relevant items)
 - [ ] Graded relevance works properly
 
 ### Example Usage
-```python
+
 from src.ranking.metrics import calculate_mrr, calculate_ndcg
 
 # MRR example
@@ -584,14 +581,14 @@ Offline evaluation system for ranking quality assessment.
 ### Evaluation Workflow
 
 1. **Generate Test Queries**
-```bash
+
 uv run python scripts/generate_test_queries.py \
   --output data/test_queries/queries.jsonl \
   --count 50
-```
+
 
 2. **Label Relevance (Manual)**
-```json
+
 {
   "query": "OAuth implementation",
   "results": [
@@ -600,18 +597,18 @@ uv run python scripts/generate_test_queries.py \
     {"doc_id": "msg_789", "relevance": 0}
   ]
 }
-```
+
 
 3. **Run Evaluation**
-```bash
+
 uv run python scripts/evaluate_ranking.py \
   --queries data/test_queries/queries.jsonl \
   --judgments data/test_queries/relevance_judgments.jsonl \
   --strategies semantic,bm25,hybrid_rrf,hybrid_weighted
-```
+
 
 4. **View Results**
-```
+
 Strategy Comparison:
 ┌─────────────────┬───────┬──────────┬──────────┬──────────┐
 │ Strategy        │  MRR  │ NDCG@10  │  P@5     │  R@10    │
@@ -623,7 +620,7 @@ Strategy Comparison:
 └─────────────────┴───────┴──────────┴──────────┴──────────┘
 
 Best: hybrid_rrf (+8.8% MRR vs semantic)
-```
+
 
 ### Test Query Categories
 - Factual queries: "Who approved OAuth decision?"
@@ -641,7 +638,7 @@ Best: hybrid_rrf (+8.8% MRR vs semantic)
 - [ ] Handles missing judgments gracefully
 
 ### API Endpoint
-```bash
+
 POST /api/v1/evaluate
 {
   "queries": [...],
@@ -754,10 +751,10 @@ Comprehensive tests and documentation for ranking and search quality.
 - API examples with hybrid search
 - Ranking strategy selection guide
 - Feature configuration examples
-```
+
 
 ### Example: Complete Ranking Pipeline
-```python
+
 from src.search.hybrid_search import HybridSearch
 from src.ranking.features import FeatureExtractor
 from src.ranking.metrics import calculate_ndcg
@@ -779,7 +776,7 @@ for result in results[:5]:
 relevance = [3, 3, 2, 1, 1, 0, 0, 0, 0, 0]
 ndcg = calculate_ndcg(relevance, k=10)
 print(f"NDCG@10: {ndcg:.3f}")
-```
+
 
 ### Troubleshooting Added
 - Elasticsearch connection issues
