@@ -252,7 +252,7 @@ class TestElasticsearchClient:
 
     def test_bulk_index_messages_success(self, es_client, mock_es_client, sample_messages):
         """Test bulk indexing messages."""
-        with patch("src.db.elasticsearch.bulk") as mock_bulk:
+        with patch("elasticsearch.helpers.bulk") as mock_bulk:
             mock_bulk.return_value = (3, [])  # 3 successful, 0 failed
 
             success, failed = es_client.bulk_index_messages("messages", sample_messages)
@@ -263,7 +263,7 @@ class TestElasticsearchClient:
 
     def test_bulk_index_messages_partial_failure(self, es_client, mock_es_client, sample_messages):
         """Test bulk indexing with some failures."""
-        with patch("src.db.elasticsearch.bulk") as mock_bulk:
+        with patch("elasticsearch.helpers.bulk") as mock_bulk:
             mock_bulk.return_value = (2, [{"index": {"error": "error"}}])  # 2 success, 1 failed
 
             success, failed = es_client.bulk_index_messages("messages", sample_messages)
@@ -273,7 +273,7 @@ class TestElasticsearchClient:
 
     def test_bulk_index_messages_error(self, es_client, mock_es_client, sample_messages):
         """Test bulk indexing with exception."""
-        with patch("src.db.elasticsearch.bulk") as mock_bulk:
+        with patch("elasticsearch.helpers.bulk") as mock_bulk:
             mock_bulk.side_effect = Exception("Bulk indexing failed")
 
             success, failed = es_client.bulk_index_messages("messages", sample_messages)
@@ -340,7 +340,9 @@ class TestElasticsearchClient:
 
     def test_search_messages_index_not_found(self, es_client, mock_es_client):
         """Test searching non-existent index."""
-        mock_es_client.search.side_effect = NotFoundError("Index not found")
+        # NotFoundError requires meta and body arguments in ES 8.x
+        mock_meta = MagicMock()
+        mock_es_client.search.side_effect = NotFoundError("Index not found", mock_meta, {})
 
         results = es_client.search_messages("nonexistent", "query")
 
@@ -367,7 +369,9 @@ class TestElasticsearchClient:
 
     def test_get_document_count_index_not_found(self, es_client, mock_es_client):
         """Test document count for non-existent index."""
-        mock_es_client.count.side_effect = NotFoundError("Index not found")
+        # NotFoundError requires meta and body arguments in ES 8.x
+        mock_meta = MagicMock()
+        mock_es_client.count.side_effect = NotFoundError("Index not found", mock_meta, {})
 
         count = es_client.get_document_count("nonexistent")
 
@@ -474,7 +478,7 @@ class TestElasticsearchClient:
 
     def test_bulk_actions_structure(self, es_client, sample_messages):
         """Test that bulk actions are properly structured."""
-        with patch("src.db.elasticsearch.bulk") as mock_bulk:
+        with patch("elasticsearch.helpers.bulk") as mock_bulk:
             mock_bulk.return_value = (len(sample_messages), [])
 
             es_client.bulk_index_messages("messages", sample_messages)
