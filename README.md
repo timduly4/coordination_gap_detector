@@ -64,12 +64,25 @@ cp .env.example .env
 ### Start Infrastructure
 
 ```bash
-# Start required services (PostgreSQL, Redis, ChromaDB, Redis)
+# Start required services (PostgreSQL, Redis, ChromaDB, Elasticsearch)
 docker compose up -d
+
+# Verify all services are running
+docker compose ps
+
+# Check service health
+curl http://localhost:8000/health/detailed
 
 # Run database migrations
 docker compose exec api alembic upgrade head
 ```
+
+**Infrastructure Services:**
+- **PostgreSQL** (port 5432) - Primary database with pgvector extension
+- **Redis** (port 6379) - Caching and real-time feature store
+- **ChromaDB** (port 8001) - Vector database for semantic search
+- **Elasticsearch** (port 9200) - Full-text search with BM25 ranking
+- **API** (port 8000) - FastAPI application server
 
 ### Generate Mock Data (Development)
 
@@ -172,7 +185,7 @@ coordination-gap-detector/
 ### Running Tests
 
 ```bash
-# Run all tests
+# Run all tests (unit tests only, faster)
 uv run pytest
 
 # Run with coverage
@@ -180,12 +193,21 @@ uv run pytest --cov=src --cov-report=html
 
 # Run specific test modules
 uv run pytest tests/test_api/test_search.py -v          # Search API tests
-uv run pytest tests/test_vector_store.py -v             # Vector store tests
+uv run pytest tests/test_db/test_vector_store.py -v     # Vector store tests
+uv run pytest tests/test_db/test_elasticsearch.py -v    # Elasticsearch tests
 uv run pytest tests/test_embeddings.py -v               # Embedding tests
 
 # Run tests by category
 uv run pytest tests/test_api/ -v                        # All API tests
-uv run pytest tests/test_integration/ -v                # Integration tests
+uv run pytest tests/test_db/ -v                         # All database tests
+uv run pytest tests/test_ranking/ -v                    # All ranking tests
+
+# Run integration tests (requires running services)
+uv run pytest -m integration                            # Only integration tests
+uv run pytest tests/test_integration/ -v                # All integration tests
+
+# Skip integration tests (useful for CI without Docker)
+uv run pytest -m "not integration"
 
 # Run in Docker
 docker compose exec api pytest
@@ -195,6 +217,30 @@ docker compose exec api pytest -v
 
 # Run specific test with Docker
 docker compose exec api pytest tests/test_api/test_search.py::TestSearchEndpoint::test_search_basic_query -v
+```
+
+**Test Categories:**
+- **Unit Tests** - Fast, mocked dependencies (default)
+- **Integration Tests** - Require Docker services (Elasticsearch, PostgreSQL, etc.)
+  - Marked with `@pytest.mark.integration`
+  - Run with: `pytest -m integration`
+  - Require: `docker compose up -d`
+
+**Elasticsearch Integration Tests:**
+```bash
+# Start Elasticsearch
+docker compose up -d elasticsearch
+
+# Run Elasticsearch integration tests
+uv run pytest tests/test_integration/test_elasticsearch_integration.py -v
+
+# These tests verify:
+# - Connection and cluster health
+# - Index creation and deletion
+# - Message indexing (single and bulk)
+# - BM25-based search
+# - Filtering by source and channel
+# - Search relevance ordering
 ```
 
 For comprehensive testing documentation including test structure, options, and troubleshooting, see **[TESTING.md](./TESTING.md)**.
@@ -379,6 +425,49 @@ docker compose restart chromadb
 # Clear and reinitialize ChromaDB data
 rm -rf data/chroma/*
 docker compose restart chromadb
+```
+
+#### Elasticsearch Connection Issues
+
+**Problem**: Elasticsearch operations fail or cluster is unreachable
+
+**Solutions**:
+```bash
+# Check Elasticsearch service status
+docker compose logs elasticsearch
+
+# Verify Elasticsearch is accessible
+curl http://localhost:9200
+curl http://localhost:9200/_cluster/health
+
+# Check Elasticsearch in health endpoint
+curl http://localhost:8000/health/detailed | jq '.services.elasticsearch'
+
+# Restart Elasticsearch service
+docker compose restart elasticsearch
+
+# Clear Elasticsearch data and restart
+docker compose down
+docker volume rm coordination_gap_detector_elasticsearch_data
+docker compose up -d elasticsearch
+
+# Monitor Elasticsearch logs in real-time
+docker compose logs elasticsearch --follow
+```
+
+**Check Elasticsearch Status:**
+```bash
+# Cluster info
+curl http://localhost:9200
+
+# Cluster health (should be green or yellow)
+curl http://localhost:9200/_cluster/health?pretty
+
+# List all indices
+curl http://localhost:9200/_cat/indices?v
+
+# Check specific index
+curl http://localhost:9200/messages/_count
 ```
 
 #### Search Returns No Results
