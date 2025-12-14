@@ -52,6 +52,28 @@ services:
     networks:
       - coordination-network
 
+  # Elasticsearch for keyword search and BM25 ranking
+  elasticsearch:
+    image: docker.elastic.co/elasticsearch/elasticsearch:8.12.0
+    container_name: coordination-elasticsearch
+    environment:
+      - discovery.type=single-node
+      - xpack.security.enabled=false
+      - "ES_JAVA_OPTS=-Xms512m -Xmx512m"
+      - ELASTIC_PASSWORD=elastic
+    ports:
+      - "9200:9200"
+      - "9300:9300"
+    volumes:
+      - elasticsearch_data:/usr/share/elasticsearch/data
+    healthcheck:
+      test: ["CMD-SHELL", "curl -f http://localhost:9200/_cluster/health || exit 1"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+    networks:
+      - coordination-network
+
   # FastAPI Application
   api:
     build:
@@ -76,6 +98,9 @@ services:
       - CHROMA_HTTP_CLIENT=true
       - CHROMA_HOST=chromadb
 
+      # Search Infrastructure
+      - ELASTICSEARCH_URL=http://elasticsearch:9200
+
       # API Keys (load from .env file)
       - ANTHROPIC_API_KEY=${ANTHROPIC_API_KEY:-}
       - SLACK_BOT_TOKEN=${SLACK_BOT_TOKEN:-}
@@ -94,6 +119,8 @@ services:
         condition: service_healthy
       chromadb:
         condition: service_started
+      elasticsearch:
+        condition: service_healthy
     networks:
       - coordination-network
     # Development: enable auto-reload
@@ -105,6 +132,8 @@ volumes:
   redis_data:
     driver: local
   chroma_data:
+    driver: local
+  elasticsearch_data:
     driver: local
   app_data:
     driver: local
