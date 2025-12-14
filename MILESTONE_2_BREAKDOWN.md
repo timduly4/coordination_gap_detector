@@ -53,10 +53,10 @@ Add Elasticsearch for keyword search and BM25 ranking.
 - [ ] Health endpoint shows ES connectivity
 - [ ] Can create indices and mappings
 - [ ] Connection error handling works
-```
+
 
 ### Index Mapping
-```json
+
 {
   "messages": {
     "mappings": {
