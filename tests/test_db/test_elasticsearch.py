@@ -25,13 +25,20 @@ class TestElasticsearchClient:
     @pytest.fixture
     def es_client(self, mock_es_client):
         """Create an ElasticsearchClient instance with mocked ES."""
+        # Reset singleton before test
+        import src.db.elasticsearch as es_module
+        es_module._es_client = None
+
         with patch("src.db.elasticsearch.get_settings") as mock_settings:
             mock_settings.return_value = MagicMock(
                 elasticsearch_url="http://localhost:9200",
                 elasticsearch_api_key=None,
             )
             client = ElasticsearchClient()
-            return client
+            yield client
+
+            # Reset singleton after test to avoid polluting other tests
+            es_module._es_client = None
 
     @pytest.fixture
     def sample_messages(self):

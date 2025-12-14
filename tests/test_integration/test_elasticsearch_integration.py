@@ -17,6 +17,10 @@ pytestmark = pytest.mark.integration
 @pytest.fixture(scope="module")
 def es_client():
     """Get Elasticsearch client for integration testing."""
+    # Reset the singleton to ensure we get a real client, not a mock from unit tests
+    import src.db.elasticsearch as es_module
+    es_module._es_client = None
+
     client = get_es_client()
 
     # Check if ES is available
