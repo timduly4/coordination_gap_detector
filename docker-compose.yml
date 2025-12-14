@@ -54,7 +54,7 @@ services:
 
   # Elasticsearch for keyword search and BM25 ranking
   elasticsearch:
-    image: docker.elastic.co/elasticsearch/elasticsearch:8.12.0
+    image: docker.elastic.co/elasticsearch/elasticsearch:9.0.0
     container_name: coordination-elasticsearch
     environment:
       - discovery.type=single-node
