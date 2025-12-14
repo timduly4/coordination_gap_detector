@@ -9,6 +9,7 @@ from fastapi import FastAPI
 from fastapi.middleware.cors import CORSMiddleware
 
 from src.config import get_settings
+from src.db.elasticsearch import get_es_client
 from src.db.postgres import check_db_connection
 from src.db.vector_store import get_vector_store
 
@@ -71,7 +72,7 @@ def create_app() -> FastAPI:
     async def detailed_health_check() -> dict[str, Any]:
         """
         Detailed health check with service connectivity status.
-        Checks: Postgres, Redis, ChromaDB
+        Checks: Postgres, Redis, ChromaDB, Elasticsearch
         """
         health_status = {
             "status": "healthy",
@@ -111,6 +112,20 @@ def create_app() -> FastAPI:
             }
         except Exception as e:
             health_status["services"]["chromadb"] = {"status": "error", "message": str(e)}
+
+        # Check Elasticsearch
+        try:
+            es_client = get_es_client()
+            es_connected = es_client.check_connection()
+            cluster_health = es_client.get_cluster_health()
+            health_status["services"]["elasticsearch"] = {
+                "status": "connected" if es_connected else "disconnected",
+                "url": settings.elasticsearch_url,
+                "cluster_status": cluster_health.get("status", "unknown"),
+                "cluster_name": cluster_health.get("cluster_name", "unknown"),
+            }
+        except Exception as e:
+            health_status["services"]["elasticsearch"] = {"status": "error", "message": str(e)}
 
         # Overall status
         service_statuses = [svc.get("status") for svc in health_status["services"].values()]
