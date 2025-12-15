@@ -177,6 +177,9 @@ asyncio_mode = "auto"
 addopts = [
     "--strict-markers",
 ]
+markers = [
+    "integration: marks tests as integration tests (require external services)",
+]
 
 [tool.coverage.run]
 source = ["src"]
