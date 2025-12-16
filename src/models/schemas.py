@@ -56,6 +56,22 @@ class SearchRequest(BaseModel):
         ge=0.0,
         le=1.0,
     )
+    ranking_strategy: Optional[str] = Field(
+        default="auto",
+        description="Search ranking strategy: 'auto' (detect intent), 'semantic', 'bm25', 'hybrid_rrf', 'hybrid_weighted'"
+    )
+    semantic_weight: Optional[float] = Field(
+        default=0.7,
+        description="Weight for semantic scores in hybrid_weighted strategy (0.0-1.0)",
+        ge=0.0,
+        le=1.0,
+    )
+    keyword_weight: Optional[float] = Field(
+        default=0.3,
+        description="Weight for keyword scores in hybrid_weighted strategy (0.0-1.0)",
+        ge=0.0,
+        le=1.0,
+    )
     source_types: Optional[List[str]] = Field(
         None, description="Filter by source types (e.g., ['slack', 'github'])"
     )
@@ -72,6 +88,20 @@ class SearchRequest(BaseModel):
             raise ValueError("Query cannot be empty or only whitespace")
         return v
 
+    @field_validator("ranking_strategy")
+    @classmethod
+    def validate_strategy(cls, v: Optional[str]) -> Optional[str]:
+        """Validate ranking strategy."""
+        if v is None:
+            return "auto"
+
+        valid_strategies = ["auto", "semantic", "bm25", "hybrid_rrf", "hybrid_weighted"]
+        if v not in valid_strategies:
+            raise ValueError(
+                f"Invalid ranking strategy: {v}. Must be one of {valid_strategies}"
+            )
+        return v
+
 
 class SearchResultItem(BaseModel):
     """Schema for a single search result."""
@@ -81,10 +111,13 @@ class SearchResultItem(BaseModel):
     channel: Optional[str] = Field(None, description="Channel or location")
     author: Optional[str] = Field(None, description="Message author")
     timestamp: datetime = Field(..., description="When the message was created")
-    score: float = Field(..., description="Similarity score (0.0 to 1.0)", ge=0.0, le=1.0)
+    score: float = Field(..., description="Similarity score (0.0 to 1.0)", ge=0.0)
     message_id: int = Field(..., description="Database message ID")
     external_id: Optional[str] = Field(None, description="ID in source system")
     message_metadata: Optional[Dict[str, Any]] = Field(None, description="Additional metadata")
+    ranking_details: Optional[Dict[str, Any]] = Field(
+        None, description="Detailed ranking information (semantic/keyword scores, ranks, fusion method)"
+    )
 
 
 class SearchResponse(BaseModel):
@@ -95,6 +128,8 @@ class SearchResponse(BaseModel):
     query: str = Field(..., description="The search query that was executed")
     query_time_ms: int = Field(..., description="Query execution time in milliseconds", ge=0)
     threshold: float = Field(..., description="Similarity threshold used", ge=0.0, le=1.0)
+    ranking_strategy: Optional[str] = Field(None, description="Ranking strategy used for this search")
+    query_intent: Optional[str] = Field(None, description="Detected query intent (if auto strategy)")
 
 
 class VectorStoreInsertRequest(BaseModel):

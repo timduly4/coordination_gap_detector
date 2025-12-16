@@ -495,7 +495,11 @@ class TestErrorHandlingIntegration:
         try:
             response = client.post(
                 "/api/v1/search/",
-                json={"query": "test", "limit": 5},
+                json={
+                    "query": "test semantic search query to trigger vector store",
+                    "limit": 5,
+                    "ranking_strategy": "semantic"  # Force semantic strategy to use mocked vector store
+                },
             )
 
             # Should return 500 error
