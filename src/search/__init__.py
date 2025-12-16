@@ -9,6 +9,18 @@ Provides:
 - Search filters
 """
 
+from src.search.filters import SearchFilter, filter_results, apply_threshold
+from src.search.hybrid_search import HybridSearchFusion, deduplicate_results
+from src.search.query_parser import QueryParser, parse_query
 from src.search.retrieval import KeywordRetriever
 
-__all__ = ["KeywordRetriever"]
+__all__ = [
+    "KeywordRetriever",
+    "HybridSearchFusion",
+    "deduplicate_results",
+    "QueryParser",
+    "parse_query",
+    "SearchFilter",
+    "filter_results",
+    "apply_threshold",
+]
