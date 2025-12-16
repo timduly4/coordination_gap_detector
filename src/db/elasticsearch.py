@@ -265,6 +265,7 @@ class ElasticsearchClient:
         size: int = 10,
         source_filter: Optional[str] = None,
         channel_filter: Optional[str] = None,
+        explain: bool = False,
     ) -> dict[str, Any]:
         """
         Search messages using BM25 scoring.
@@ -275,56 +276,43 @@ class ElasticsearchClient:
             size: Number of results to return
             source_filter: Filter by source (e.g., 'slack')
             channel_filter: Filter by channel
+            explain: Include score explanation in results
 
         Returns:
             dict: Search results with scores
         """
         try:
-            # Build query
-            must_clauses = [
-                {
-                    "match": {
-                        "content": {
-                            "query": query,
-                            "operator": "or"
-                        }
-                    }
-                }
-            ]
-
-            # Add filters
-            filter_clauses = []
-            if source_filter:
-                filter_clauses.append({"term": {"source": source_filter}})
-            if channel_filter:
-                filter_clauses.append({"term": {"channel": channel_filter}})
-
-            search_query = {
-                "query": {
-                    "bool": {
-                        "must": must_clauses,
-                        "filter": filter_clauses
-                    }
-                },
-                "size": size,
-                "explain": False
-            }
+            # Build BM25 query
+            search_query = self.build_bm25_query(
+                query=query,
+                size=size,
+                source_filter=source_filter,
+                channel_filter=channel_filter,
+                explain=explain
+            )
 
             response = self.client.search(
                 index=index_name,
                 body=search_query
             )
 
+            results = []
+            for hit in response["hits"]["hits"]:
+                result = {
+                    "message_id": hit["_id"],
+                    "score": hit["_score"],
+                    "source": hit["_source"]
+                }
+
+                # Add explanation if requested
+                if explain and "_explanation" in hit:
+                    result["explanation"] = hit["_explanation"]
+
+                results.append(result)
+
             return {
                 "total": response["hits"]["total"]["value"],
-                "results": [
-                    {
-                        "message_id": hit["_id"],
-                        "score": hit["_score"],
-                        "source": hit["_source"]
-                    }
-                    for hit in response["hits"]["hits"]
-                ]
+                "results": results
             }
         except NotFoundError:
             logger.warning(f"Index '{index_name}' not found")
@@ -332,6 +320,70 @@ class ElasticsearchClient:
         except Exception as e:
             logger.error(f"Error searching messages: {e}")
             return {"total": 0, "results": []}
+
+    def build_bm25_query(
+        self,
+        query: str,
+        size: int = 10,
+        source_filter: Optional[str] = None,
+        channel_filter: Optional[str] = None,
+        explain: bool = False,
+        k1: float = 1.5,
+        b: float = 0.75,
+    ) -> dict[str, Any]:
+        """
+        Build Elasticsearch query with BM25 scoring parameters.
+
+        BM25 parameters:
+        - k1: Controls term frequency saturation (default: 1.5)
+        - b: Controls length normalization (default: 0.75)
+
+        Args:
+            query: Search query string
+            size: Number of results to return
+            source_filter: Filter by source platform
+            channel_filter: Filter by channel
+            explain: Include score explanation
+            k1: BM25 term frequency saturation parameter
+            b: BM25 length normalization parameter
+
+        Returns:
+            dict: Elasticsearch query DSL
+        """
+        # Build must clauses with BM25 parameters
+        must_clauses = [
+            {
+                "match": {
+                    "content": {
+                        "query": query,
+                        "operator": "or",
+                        # BM25 similarity is default in ES 5.0+
+                        # These parameters can be set at index level
+                    }
+                }
+            }
+        ]
+
+        # Add filters
+        filter_clauses = []
+        if source_filter:
+            filter_clauses.append({"term": {"source": source_filter}})
+        if channel_filter:
+            filter_clauses.append({"term": {"channel": channel_filter}})
+
+        # Build complete query
+        search_query: dict[str, Any] = {
+            "query": {
+                "bool": {
+                    "must": must_clauses,
+                    "filter": filter_clauses
+                }
+            },
+            "size": size,
+            "explain": explain
+        }
+
+        return search_query
 
     def get_document_count(self, index_name: str) -> int:
         """
