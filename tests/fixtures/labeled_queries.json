@@ -1,0 +1,72 @@
+[
+  {
+    "query_id": "q1",
+    "document_id": "doc1",
+    "relevance": 3,
+    "query_text": "OAuth implementation guide",
+    "document_content": "Complete OAuth2 implementation guide with examples"
+  },
+  {
+    "query_id": "q1",
+    "document_id": "doc2",
+    "relevance": 2,
+    "query_text": "OAuth implementation guide",
+    "document_content": "OAuth authentication best practices"
+  },
+  {
+    "query_id": "q1",
+    "document_id": "doc3",
+    "relevance": 1,
+    "query_text": "OAuth implementation guide",
+    "document_content": "General authentication overview mentioning OAuth"
+  },
+  {
+    "query_id": "q1",
+    "document_id": "doc4",
+    "relevance": 0,
+    "query_text": "OAuth implementation guide",
+    "document_content": "Database migration strategies"
+  },
+  {
+    "query_id": "q2",
+    "document_id": "doc5",
+    "relevance": 3,
+    "query_text": "database migration best practices",
+    "document_content": "Comprehensive guide to database migration best practices"
+  },
+  {
+    "query_id": "q2",
+    "document_id": "doc6",
+    "relevance": 2,
+    "query_text": "database migration best practices",
+    "document_content": "Database schema evolution strategies"
+  },
+  {
+    "query_id": "q2",
+    "document_id": "doc7",
+    "relevance": 0,
+    "query_text": "database migration best practices",
+    "document_content": "Frontend development tips"
+  },
+  {
+    "query_id": "q3",
+    "document_id": "doc8",
+    "relevance": 3,
+    "query_text": "how to implement rate limiting",
+    "document_content": "Step-by-step rate limiting implementation tutorial"
+  },
+  {
+    "query_id": "q3",
+    "document_id": "doc9",
+    "relevance": 3,
+    "query_text": "how to implement rate limiting",
+    "document_content": "Rate limiting patterns and algorithms"
+  },
+  {
+    "query_id": "q3",
+    "document_id": "doc10",
+    "relevance": 1,
+    "query_text": "how to implement rate limiting",
+    "document_content": "API design considerations including rate limiting"
+  }
+]
