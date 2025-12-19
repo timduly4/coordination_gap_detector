@@ -219,3 +219,93 @@ class ErrorResponse(BaseModel):
     error: str = Field(..., description="Error message")
     detail: Optional[str] = Field(None, description="Detailed error information")
     timestamp: datetime = Field(default_factory=datetime.utcnow, description="Error timestamp")
+
+
+# Evaluation Schemas
+
+
+class EvaluationQueryItem(BaseModel):
+    """Schema for a single test query in evaluation."""
+
+    query_id: str = Field(..., description="Unique query identifier")
+    query_text: str = Field(..., description="Query text", min_length=1)
+    category: Optional[str] = Field(None, description="Query category (factual, technical, etc.)")
+
+
+class EvaluationJudgmentItem(BaseModel):
+    """Schema for a single relevance judgment."""
+
+    query_id: str = Field(..., description="Query identifier")
+    document_id: str = Field(..., description="Document/message ID")
+    relevance: int = Field(..., description="Relevance score (0-3)", ge=0, le=3)
+    query_text: Optional[str] = Field(None, description="Optional query text")
+
+
+class EvaluateStrategyRequest(BaseModel):
+    """Schema for evaluating ranking strategies."""
+
+    test_queries: List[Dict[str, Any]] = Field(
+        ...,
+        description="List of test queries with query_id and query_text",
+        min_length=1
+    )
+    strategies: List[str] = Field(
+        default=["semantic", "bm25", "hybrid_rrf"],
+        description="List of ranking strategies to evaluate"
+    )
+    k: int = Field(
+        default=10,
+        description="Cutoff for @k metrics",
+        ge=1,
+        le=100
+    )
+
+
+class EvaluationMetricsResponse(BaseModel):
+    """Schema for evaluation metrics."""
+
+    mrr: Optional[float] = Field(None, description="Mean Reciprocal Rank")
+    ndcg: Optional[float] = Field(None, description="Normalized Discounted Cumulative Gain")
+    precision: Optional[float] = Field(None, description="Precision at k")
+    recall: Optional[float] = Field(None, description="Recall at k")
+    f1: Optional[float] = Field(None, description="F1 score at k")
+
+
+class EvaluationComparisonResponse(BaseModel):
+    """Schema for strategy comparison results."""
+
+    strategies: List[str] = Field(..., description="Strategies evaluated")
+    num_queries: int = Field(..., description="Number of queries evaluated", ge=0)
+    k: int = Field(..., description="Cutoff used for metrics", ge=1)
+    results: Dict[str, Dict[str, Optional[float]]] = Field(
+        ...,
+        description="Evaluation results by metric name and strategy"
+    )
+    best_strategy: str = Field(..., description="Best performing strategy")
+    improvement_over_baseline: float = Field(
+        ...,
+        description="Percentage improvement over baseline strategy"
+    )
+
+
+class AddJudgmentRequest(BaseModel):
+    """Schema for adding a single judgment."""
+
+    query_id: str = Field(..., description="Query identifier")
+    document_id: str = Field(..., description="Document identifier (message ID)")
+    relevance: int = Field(..., description="Relevance score (0-3)", ge=0, le=3)
+    query_text: Optional[str] = Field(None, description="Optional query text")
+
+
+class AddJudgmentResponse(BaseModel):
+    """Schema for add judgment response."""
+
+    status: str = Field(..., description="Status of the operation")
+    message: str = Field(..., description="Response message")
+
+
+class EvaluationStatisticsResponse(BaseModel):
+    """Schema for evaluation statistics."""
+
+    num_queries: int = Field(..., description="Number of queries with judgments", ge=0)
+    num_judgments: int = Field(..., description="Total number of judgments", ge=0)
