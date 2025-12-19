@@ -1,0 +1,50 @@
+[
+  {
+    "query_id": "factual_1",
+    "document_id": "1",
+    "relevance": 3,
+    "query_text": "OAuth implementation"
+  },
+  {
+    "query_id": "factual_1",
+    "document_id": "2",
+    "relevance": 2,
+    "query_text": "OAuth implementation"
+  },
+  {
+    "query_id": "factual_1",
+    "document_id": "3",
+    "relevance": 1,
+    "query_text": "OAuth implementation"
+  },
+  {
+    "query_id": "factual_1",
+    "document_id": "4",
+    "relevance": 0,
+    "query_text": "OAuth implementation"
+  },
+  {
+    "query_id": "factual_2",
+    "document_id": "1",
+    "relevance": 3,
+    "query_text": "Who is working on authentication"
+  },
+  {
+    "query_id": "factual_2",
+    "document_id": "5",
+    "relevance": 2,
+    "query_text": "Who is working on authentication"
+  },
+  {
+    "query_id": "technical_1",
+    "document_id": "1",
+    "relevance": 3,
+    "query_text": "OAuth implementation code"
+  },
+  {
+    "query_id": "technical_1",
+    "document_id": "6",
+    "relevance": 2,
+    "query_text": "OAuth implementation code"
+  }
+]
