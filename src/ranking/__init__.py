@@ -3,7 +3,7 @@ Ranking module for search quality and scoring.
 
 Provides:
 - BM25 scoring for keyword search
-- Feature extraction for ranking
+- Feature extraction for ranking (24 features across 5 categories)
 - Ranking metrics (MRR, NDCG, DCG, Precision@k, Recall@k)
 - Evaluation framework with relevance judgments
 """
@@ -15,6 +15,16 @@ from src.ranking.evaluation import (
     RelevanceJudgment,
     load_labeled_queries_from_file,
 )
+from src.ranking.feature_config import (
+    FeatureConfig,
+    FeatureDefinition,
+    FeatureType,
+    NormalizationMethod,
+    get_default_config,
+    get_features_by_category,
+    get_minimal_config,
+)
+from src.ranking.features import FeatureExtractor
 from src.ranking.metrics import (
     RankingMetrics,
     calculate_all_metrics,
@@ -33,6 +43,15 @@ from src.ranking.scoring import BM25Scorer
 __all__ = [
     # BM25 Scoring
     "BM25Scorer",
+    # Feature Extraction
+    "FeatureExtractor",
+    "FeatureConfig",
+    "FeatureDefinition",
+    "FeatureType",
+    "NormalizationMethod",
+    "get_default_config",
+    "get_minimal_config",
+    "get_features_by_category",
     # Metrics
     "RankingMetrics",
     "calculate_mrr",
