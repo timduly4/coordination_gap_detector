@@ -276,53 +276,129 @@ Once running, visit http://localhost:8000/docs for interactive API documentation
 
 #### Search API
 
-**POST /api/v1/search/** - Semantic search across messages
+**POST /api/v1/search/** - Advanced search with multiple ranking strategies
 
-Search for messages using semantic similarity with flexible filtering options.
+Search for messages using semantic similarity, BM25 keyword matching, or hybrid fusion for best results.
+
+##### Example 1: Hybrid Search (Recommended)
+
+Combines semantic and BM25 for best overall quality:
 
 ```bash
 curl -X POST http://localhost:8000/api/v1/search/ \
   -H "Content-Type: application/json" \
   -d '{
-    "query": "OAuth implementation",
+    "query": "OAuth implementation decisions",
+    "ranking_strategy": "hybrid_rrf",
+    "limit": 10,
+    "threshold": 0.7
+  }'
+```
+
+**Response with Ranking Details:**
+```json
+{
+  "results": [
+    {
+      "content": "OAuth2 implementation decision: We've decided to use Auth0...",
+      "source": "slack",
+      "channel": "#architecture",
+      "author": "alice@demo.com",
+      "timestamp": "2024-12-01T09:00:00Z",
+      "score": 0.92,
+      "ranking_details": {
+        "semantic_score": 0.94,
+        "bm25_score": 8.5,
+        "semantic_rank": 1,
+        "bm25_rank": 2,
+        "fusion_method": "rrf",
+        "features": {
+          "recency": 0.98,
+          "thread_depth": 0.75,
+          "term_coverage": 0.85
+        }
+      },
+      "message_id": 123,
+      "external_id": "slack_msg_abc"
+    }
+  ],
+  "total": 1,
+  "query": "OAuth implementation decisions",
+  "query_time_ms": 142,
+  "threshold": 0.7,
+  "strategy": "hybrid_rrf"
+}
+```
+
+##### Example 2: Semantic Search
+
+For conceptual matching and paraphrasing:
+
+```bash
+curl -X POST http://localhost:8000/api/v1/search/ \
+  -H "Content-Type: application/json" \
+  -d '{
+    "query": "how to authenticate users",
+    "ranking_strategy": "semantic",
     "limit": 5,
-    "threshold": 0.7,
+    "threshold": 0.75
+  }'
+```
+
+##### Example 3: BM25 Keyword Search
+
+For exact technical terms and keywords:
+
+```bash
+curl -X POST http://localhost:8000/api/v1/search/ \
+  -H "Content-Type: application/json" \
+  -d '{
+    "query": "OAuth2 JWT token",
+    "ranking_strategy": "bm25",
+    "limit": 5,
     "source_types": ["slack"],
     "channels": ["#engineering"]
   }'
 ```
 
-**Response:**
-```json
-{
-  "results": [
-    {
-      "content": "Starting OAuth2 integration...",
-      "source": "slack",
-      "channel": "#engineering",
-      "author": "alice@demo.com",
-      "timestamp": "2024-12-01T09:00:00Z",
-      "score": 0.89,
-      "message_id": 123,
-      "external_id": "slack_msg_abc",
-      "message_metadata": {}
-    }
-  ],
-  "total": 1,
-  "query": "OAuth implementation",
-  "query_time_ms": 45,
-  "threshold": 0.7
-}
+##### Example 4: Custom Weighted Hybrid
+
+Fine-tune the balance between semantic and keyword matching:
+
+```bash
+curl -X POST http://localhost:8000/api/v1/search/ \
+  -H "Content-Type: application/json" \
+  -d '{
+    "query": "OAuth security best practices",
+    "ranking_strategy": "hybrid_weighted",
+    "semantic_weight": 0.7,
+    "keyword_weight": 0.3,
+    "limit": 10
+  }'
 ```
 
 **Parameters:**
 - `query` (required): Search query text (1-1000 characters)
+- `ranking_strategy` (optional): Ranking method - `"semantic"`, `"bm25"`, `"hybrid_rrf"` (default), or `"hybrid_weighted"`
 - `limit` (optional): Maximum results to return (1-100, default: 10)
 - `threshold` (optional): Minimum similarity score (0.0-1.0, default: 0.0)
 - `source_types` (optional): Filter by source types (e.g., ["slack", "github"])
 - `channels` (optional): Filter by specific channels
 - `date_from` (optional): Filter messages from this date (ISO format)
 - `date_to` (optional): Filter messages until this date (ISO format)
+- `semantic_weight` (optional): Weight for semantic scores when using `hybrid_weighted` (0.0-1.0, default: 0.7)
+- `keyword_weight` (optional): Weight for BM25 scores when using `hybrid_weighted` (0.0-1.0, default: 0.3)
+
+**Ranking Strategy Guide:**
+
+| Strategy | Best For | Use When |
+|----------|----------|----------|
+| `hybrid_rrf` | General-purpose search (recommended default) | You want best overall results without tuning |
+| `semantic` | Conceptual matches, paraphrasing, questions | Query describes concepts in natural language |
+| `bm25` | Exact keywords, technical terms, acronyms | Query contains specific technical terms (OAuth, API, JWT) |
+| `hybrid_weighted` | Custom requirements | You need fine control over semantic vs keyword balance |
+
+See [docs/RANKING.md](./docs/RANKING.md) for detailed ranking strategy documentation.
 
 **GET /api/v1/search/health** - Search service health check
 
@@ -344,6 +420,64 @@ curl http://localhost:8000/api/v1/search/health
 }
 ```
 
+#### Ranking Evaluation API
+
+**POST /api/v1/evaluate** - Evaluate ranking strategies offline
+
+Evaluate search quality using test queries and relevance judgments.
+
+```bash
+curl -X POST http://localhost:8000/api/v1/evaluate \
+  -H "Content-Type: application/json" \
+  -d '{
+    "strategies": ["semantic", "bm25", "hybrid_rrf"],
+    "metrics": ["mrr", "ndcg@10", "precision@5"],
+    "test_queries": [
+      {
+        "query_id": "oauth_001",
+        "query": "OAuth implementation decisions",
+        "judgments": [
+          {"document_id": "msg_1", "relevance": 3},
+          {"document_id": "msg_2", "relevance": 2}
+        ]
+      }
+    ]
+  }'
+```
+
+**Response:**
+```json
+{
+  "results": {
+    "semantic": {
+      "mrr": 0.742,
+      "ndcg@10": 0.789,
+      "precision@5": 0.680
+    },
+    "bm25": {
+      "mrr": 0.685,
+      "ndcg@10": 0.721,
+      "precision@5": 0.620
+    },
+    "hybrid_rrf": {
+      "mrr": 0.798,
+      "ndcg@10": 0.841,
+      "precision@5": 0.740
+    }
+  },
+  "best_strategy": "hybrid_rrf",
+  "statistical_significance": {
+    "hybrid_rrf_vs_semantic": {
+      "mrr_improvement": 0.056,
+      "p_value": 0.003,
+      "significant": true
+    }
+  }
+}
+```
+
+See [docs/EVALUATION.md](./docs/EVALUATION.md) for comprehensive evaluation methodology.
+
 #### Gap Detection API (Coming Soon)
 
 **POST /api/v1/gaps/detect** - Detect coordination gaps
@@ -358,7 +492,99 @@ POST /api/v1/gaps/detect
 }
 ```
 
-*Note: Gap detection endpoints are planned for future milestones.*
+*Note: Gap detection endpoints are planned for future milestones (Milestone 3+).*
+
+## Milestone 2: Ranking & Search Quality
+
+Milestone 2 adds sophisticated ranking capabilities and evaluation frameworks to the system.
+
+### Features Completed
+
+✅ **Elasticsearch Integration** - Full-text search with BM25 scoring
+✅ **BM25 Implementation** - Probabilistic ranking with configurable parameters (k1, b)
+✅ **Hybrid Search** - Combines semantic and keyword search using Reciprocal Rank Fusion (RRF) and weighted fusion
+✅ **Ranking Metrics** - MRR, NDCG, DCG, Precision@k, Recall@k calculations
+✅ **Feature Engineering** - 40+ ranking features across query-doc similarity, temporal, engagement, and authority signals
+✅ **Evaluation Framework** - Offline evaluation with test queries, relevance judgments, and strategy comparison
+✅ **A/B Testing Support** - Statistical significance testing and experiment framework
+
+### Quick Start with Milestone 2
+
+```bash
+# 1. Start all services (includes Elasticsearch)
+docker compose up -d
+
+# 2. Generate mock data with varied relevance
+docker compose exec api python scripts/generate_mock_data.py --scenarios all
+
+# 3. Try different ranking strategies
+# Hybrid search (best overall)
+curl -X POST http://localhost:8000/api/v1/search/ \
+  -H "Content-Type: application/json" \
+  -d '{"query": "OAuth implementation", "ranking_strategy": "hybrid_rrf"}'
+
+# BM25 keyword search
+curl -X POST http://localhost:8000/api/v1/search/ \
+  -H "Content-Type: application/json" \
+  -d '{"query": "OAuth implementation", "ranking_strategy": "bm25"}'
+
+# 4. Run offline evaluation
+python scripts/evaluate_ranking.py \
+  --strategies semantic,bm25,hybrid_rrf \
+  --metrics mrr,ndcg@10
+```
+
+### Key Documentation
+
+- **[RANKING.md](./docs/RANKING.md)** - Comprehensive ranking strategy guide
+  - When to use semantic vs BM25 vs hybrid
+  - Parameter tuning (BM25 k1/b, fusion weights)
+  - Feature descriptions and importance
+  - Performance optimization
+  - Troubleshooting ranking issues
+
+- **[EVALUATION.md](./docs/EVALUATION.md)** - Evaluation methodology
+  - Creating test query sets
+  - Relevance judgment guidelines (0-3 scale)
+  - Running offline evaluations
+  - Interpreting metrics (MRR, NDCG, P@k, R@k)
+  - A/B testing best practices
+  - Continuous evaluation pipelines
+
+### Ranking Performance
+
+All performance targets from Milestone 2 breakdown:
+
+| Operation | Target (p95) | Typical |
+|-----------|--------------|---------|
+| Hybrid search | <200ms | 100-150ms |
+| Feature extraction | <50ms/doc | 10-20ms |
+| BM25 scoring (1000 docs) | <100ms | 40-60ms |
+| NDCG calculation (50 results) | <10ms | 3-5ms |
+
+### Example: Comparing Strategies
+
+```bash
+# Evaluate all strategies on test queries
+python scripts/evaluate_ranking.py \
+  --queries data/test_queries/queries.jsonl \
+  --judgments data/test_queries/judgments.jsonl \
+  --strategies semantic,bm25,hybrid_rrf,hybrid_weighted \
+  --metrics mrr,ndcg@10,precision@5 \
+  --output results/strategy_comparison.json
+
+# Output:
+# Strategy Comparison
+# ═══════════════════════════════════════
+# Strategy         MRR    NDCG@10  P@5
+# semantic        0.742   0.789   0.680
+# bm25            0.685   0.721   0.620
+# hybrid_rrf      0.798   0.841   0.740  ⭐ Best
+# hybrid_weighted 0.776   0.823   0.720
+#
+# Best strategy: hybrid_rrf
+# Improvement over semantic: +7.5% MRR (p<0.01)
+```
 
 ## Troubleshooting
 
@@ -591,6 +817,128 @@ cp .env.example .env
 # Restart services to pick up new env vars
 docker compose down
 docker compose up -d
+```
+
+#### BM25 Scores All Zero (Milestone 2)
+
+**Problem**: BM25 search returns all documents with score 0.0
+
+**Causes**:
+- Query terms not found in documents
+- Case mismatch between query and documents
+- Elasticsearch index not populated
+
+**Solutions**:
+```bash
+# 1. Check if Elasticsearch index exists and has documents
+curl http://localhost:9200/messages/_count
+
+# 2. Verify documents are indexed
+curl http://localhost:9200/messages/_search?pretty
+
+# 3. Reindex messages
+docker compose exec api python scripts/reindex_elasticsearch.py
+
+# 4. Test with known query
+curl -X POST http://localhost:8000/api/v1/search/ \
+  -H "Content-Type: application/json" \
+  -d '{"query": "OAuth", "ranking_strategy": "bm25"}'
+
+# 5. Check query terms (case-insensitive matching should work)
+# If still failing, check Elasticsearch analyzer settings
+curl http://localhost:9200/messages/_mapping?pretty
+```
+
+#### Hybrid Search Not Improving Results (Milestone 2)
+
+**Problem**: Hybrid search performs worse than single methods
+
+**Causes**:
+- Score normalization issues
+- One method dominating
+- Inappropriate fusion weights
+
+**Solutions**:
+```python
+# Try RRF instead of weighted (more robust)
+{
+  "query": "OAuth implementation",
+  "ranking_strategy": "hybrid_rrf"  # Instead of hybrid_weighted
+}
+
+# Check score distributions
+curl -X POST http://localhost:8000/api/v1/search/ \
+  -H "Content-Type: application/json" \
+  -d '{
+    "query": "OAuth",
+    "ranking_strategy": "hybrid_rrf",
+    "limit": 5
+  }' | jq '.results[].ranking_details'
+
+# Look for:
+# - semantic_score and bm25_score values
+# - semantic_rank vs bm25_rank
+# - Both should contribute to final ranking
+```
+
+#### Low Ranking Metrics (Milestone 2)
+
+**Problem**: MRR < 0.5, NDCG@10 < 0.55 in offline evaluation
+
+**Causes**:
+- Insufficient training data
+- Test queries too difficult
+- Relevance judgments too strict
+- System underperforming
+
+**Solutions**:
+```bash
+# 1. Check test query difficulty
+python scripts/analyze_query_difficulty.py \
+  --queries data/test_queries/queries.jsonl
+
+# 2. Review relevance judgment distribution
+python scripts/check_judgments.py \
+  --judgments data/test_queries/judgments.jsonl
+# Should have mix of 0, 1, 2, 3 scores
+
+# 3. Evaluate per-category
+python scripts/evaluate_ranking.py \
+  --queries data/test_queries/queries.jsonl \
+  --judgments data/test_queries/judgments.jsonl \
+  --strategies hybrid_rrf \
+  --group-by category
+
+# 4. Identify failure cases
+python scripts/find_failure_cases.py \
+  --results results/eval.json \
+  --threshold-mrr 0.3
+# Shows queries with poor performance
+
+# 5. Try different strategies
+python scripts/evaluate_ranking.py \
+  --strategies semantic,bm25,hybrid_rrf,hybrid_weighted \
+  --metrics mrr,ndcg@10
+# Compare to find best for your use case
+```
+
+#### Feature Extraction Slow (Milestone 2)
+
+**Problem**: Feature extraction takes too long per document
+
+**Solutions**:
+```python
+# Use minimal feature set
+from src.ranking.feature_config import get_minimal_config
+
+config = get_minimal_config()
+extractor = FeatureExtractor(config=config)
+
+# Only extract for top-k results (not all results)
+# Extract for top 20 instead of top 100
+
+# Profile to find bottleneck
+python -m cProfile scripts/profile_feature_extraction.py
 ```
 
 ### Getting Help
