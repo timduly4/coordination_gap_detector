@@ -53,20 +53,23 @@ curl http://localhost:9200
 ### Step 2: Load Mock Data
 
 ```bash
-# Generate and load mock Slack messages
-uv run python scripts/generate_mock_data.py --load
-
-
+# Generate and load mock Slack messages (all scenarios)
+uv run python scripts/generate_mock_data.py --scenarios all --clear
 
 # Verify data loaded
 docker compose exec postgres psql -U coordination_user -d coordination -c "SELECT COUNT(*) FROM messages;"
-# Should show number of messages loaded
+# Should show 24 messages loaded
+
+# Verify Elasticsearch index
+curl -s http://localhost:9200/messages/_count | jq .
+# Should show {"count": 24}
 ```
 
 **What to look for**:
 - ✅ Mock data generation completes without errors
-- ✅ Messages inserted into database
-- ✅ Both Postgres and vector store populated
+- ✅ Messages inserted into database (24 messages)
+- ✅ Embeddings created in ChromaDB (24 embeddings)
+- ✅ Messages indexed in Elasticsearch (24 documents)
 
 ### Step 3: Start the API
 
