@@ -56,8 +56,10 @@ curl http://localhost:9200
 # Generate and load mock Slack messages
 uv run python scripts/generate_mock_data.py --load
 
+
+
 # Verify data loaded
-docker compose exec postgres psql -U user -d coordination -c "SELECT COUNT(*) FROM messages;"
+docker compose exec postgres psql -U coordination_user -d coordination -c "SELECT COUNT(*) FROM messages;"
 # Should show number of messages loaded
 ```
 
