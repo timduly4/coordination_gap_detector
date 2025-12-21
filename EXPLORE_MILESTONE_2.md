@@ -130,7 +130,7 @@ curl http://localhost:8000/health/detailed
 
 ```bash
 # Simple semantic search
-curl -X POST http://localhost:8000/api/v1/search \
+curl -X POST http://localhost:8000/api/v1/search/ \
   -H "Content-Type: application/json" \
   -d '{
     "query": "OAuth implementation",
@@ -147,7 +147,7 @@ curl -X POST http://localhost:8000/api/v1/search \
 
 ```bash
 # Hybrid search with RRF fusion
-curl -X POST http://localhost:8000/api/v1/search \
+curl -X POST http://localhost:8000/api/v1/search/ \
   -H "Content-Type: application/json" \
   -d '{
     "query": "OAuth implementation decisions",
@@ -168,21 +168,21 @@ curl -X POST http://localhost:8000/api/v1/search \
 cat > compare_strategies.sh << 'EOF'
 #!/bin/bash
 echo "=== Semantic Only ==="
-curl -s -X POST http://localhost:8000/api/v1/search \
+curl -s -X POST http://localhost:8000/api/v1/search/ \
   -H "Content-Type: application/json" \
   -d '{"query": "OAuth", "ranking_strategy": "semantic", "limit": 3}' \
   | jq '.results[] | {content: .content[:50], score: .score}'
 
 echo ""
 echo "=== BM25 Only ==="
-curl -s -X POST http://localhost:8000/api/v1/search \
+curl -s -X POST http://localhost:8000/api/v1/search/ \
   -H "Content-Type: application/json" \
   -d '{"query": "OAuth", "ranking_strategy": "bm25", "limit": 3}' \
   | jq '.results[] | {content: .content[:50], score: .score}'
 
 echo ""
 echo "=== Hybrid RRF ==="
-curl -s -X POST http://localhost:8000/api/v1/search \
+curl -s -X POST http://localhost:8000/api/v1/search/ \
   -H "Content-Type: application/json" \
   -d '{"query": "OAuth", "ranking_strategy": "hybrid_rrf", "limit": 3}' \
   | jq '.results[] | {content: .content[:50], score: .score}'
@@ -582,7 +582,7 @@ export LOG_LEVEL=DEBUG
 uv run uvicorn src.main:app --reload --log-level debug
 
 # In another terminal, make a request
-curl -X POST http://localhost:8000/api/v1/search \
+curl -X POST http://localhost:8000/api/v1/search/ \
   -H "Content-Type: application/json" \
   -d '{"query": "OAuth", "ranking_strategy": "hybrid_rrf", "limit": 3}'
 
@@ -677,7 +677,7 @@ docker compose up -d
 uv run uvicorn src.main:app --reload
 
 # Test search strategies
-curl -X POST http://localhost:8000/api/v1/search \
+curl -X POST http://localhost:8000/api/v1/search/ \
   -H "Content-Type: application/json" \
   -d '{"query": "OAuth", "ranking_strategy": "hybrid_rrf"}'
 
