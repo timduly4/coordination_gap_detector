@@ -53,16 +53,26 @@ curl http://localhost:9200
 ### Step 2: Load Mock Data
 
 ```bash
-# Generate and load mock Slack messages (all scenarios)
-uv run python scripts/generate_mock_data.py --scenarios all --clear
+# Run database migrations
+docker compose exec api alembic upgrade head
 
-# Verify data loaded
+# Generate and load mock Slack messages (run inside API container to use correct ChromaDB)
+docker compose exec api python scripts/generate_mock_data.py --scenarios all --clear
+
+# Verify data loaded in PostgreSQL
 docker compose exec postgres psql -U coordination_user -d coordination -c "SELECT COUNT(*) FROM messages;"
 # Should show 24 messages loaded
 
 # Verify Elasticsearch index
 curl -s http://localhost:9200/messages/_count | jq .
 # Should show {"count": 24}
+
+# Verify ChromaDB embeddings
+docker compose exec api python -c "from src.db.vector_store import get_vector_store; vs = get_vector_store(); print(f'ChromaDB count: {vs.get_collection_count()}')"
+# Should show: ChromaDB count: 24
+
+# IMPORTANT: Restart API to reinitialize ChromaDB collection reference
+docker compose restart api && sleep 5
 ```
 
 **What to look for**:
@@ -70,14 +80,13 @@ curl -s http://localhost:9200/messages/_count | jq .
 - ✅ Messages inserted into database (24 messages)
 - ✅ Embeddings created in ChromaDB (24 embeddings)
 - ✅ Messages indexed in Elasticsearch (24 documents)
+- ✅ API restarted after data load (needed for semantic search to work)
 
-### Step 3: Start the API
+### Step 3: Verify API is Running
 
 ```bash
-# Start FastAPI server
-uv run uvicorn src.main:app --reload --port 8000
-
-# In another terminal, test health endpoint
+# API is already running from docker compose and was restarted after data load
+# Test health endpoint to confirm
 curl http://localhost:8000/health
 ```
 
