@@ -86,19 +86,45 @@ docker compose restart api && sleep 5
 
 ```bash
 # API is already running from docker compose and was restarted after data load
-# Test health endpoint to confirm
-curl http://localhost:8000/health
+# Test detailed health endpoint to confirm all services
+curl http://localhost:8000/health/detailed
 ```
 
 **Expected response**:
 ```json
 {
   "status": "healthy",
-  "database": "connected",
-  "elasticsearch": "connected",
-  "vector_store": "connected"
+  "environment": "development",
+  "services": {
+    "postgres": {
+      "status": "connected",
+      "url": "postgres:5432/coordination"
+    },
+    "redis": {
+      "status": "not_implemented",
+      "url": "redis://redis:6379"
+    },
+    "chromadb": {
+      "status": "connected",
+      "collection": "coordination_messages",
+      "document_count": 24,
+      "persist_dir": "/app/data/chroma"
+    },
+    "elasticsearch": {
+      "status": "connected",
+      "url": "http://elasticsearch:9200",
+      "cluster_status": "green",
+      "cluster_name": "docker-cluster"
+    }
+  }
 }
 ```
+
+**What to verify**:
+- ✅ All services show "connected" status
+- ✅ ChromaDB document_count: 24
+- ✅ Elasticsearch cluster_status: "green"
+- ✅ Postgres connected to correct database
 
 ### Step 4: Test Basic Search
 
