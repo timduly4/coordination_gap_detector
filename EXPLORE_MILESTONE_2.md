@@ -159,7 +159,8 @@ curl -X POST http://localhost:8000/api/v1/search/ \
 **What to look for**:
 - ✅ Results include `ranking_details` with both semantic and BM25 scores
 - ✅ Results show `fusion_method: "rrf"`
-- ✅ Both `semantic_rank` and `keyword_rank` present
+- ✅ `semantic_rank` and `keyword_rank` fields present (may be `null` if document only found by one method)
+- ✅ Documents with both ranks (appearing in both searches) get higher RRF scores
 
 ### Step 6: Compare Ranking Strategies
 
@@ -197,6 +198,53 @@ chmod +x compare_strategies.sh
 - Hybrid often has best coverage
 - BM25 better for exact keyword matches
 - Semantic better for conceptual matches
+
+### Understanding Hybrid Search Results
+
+When you see `keyword_rank: null` in hybrid search results, this is **correct behavior**, not a bug!
+
+**How Hybrid RRF Works:**
+
+1. **Semantic search** finds documents based on meaning (may not contain exact query terms)
+2. **Keyword search** finds documents containing the actual query terms
+3. **Some documents appear in both** (consensus) → Get highest RRF scores
+4. **Some documents appear in only one** → Lower RRF scores, but still included
+
+**Example Result Patterns:**
+
+```json
+// Document found by BOTH methods (highest score)
+{
+  "semantic_rank": 1,
+  "keyword_rank": 2,
+  "semantic_score": 0.85,
+  "keyword_score": 12.3,
+  "fusion_method": "rrf"
+}
+
+// Document found ONLY by semantic search
+{
+  "semantic_rank": 5,
+  "keyword_rank": null,      // ← Not found by keyword search
+  "semantic_score": 0.65,
+  "keyword_score": null,
+  "fusion_method": "rrf"
+}
+
+// Document found ONLY by keyword search
+{
+  "semantic_rank": null,     // ← Not found by semantic search
+  "keyword_rank": 3,
+  "semantic_score": null,
+  "keyword_score": 8.7,
+  "fusion_method": "rrf"
+}
+```
+
+**Why this is powerful:**
+- Documents in **both** result sets represent "consensus" and rank highest
+- You still get semantically relevant results even without exact keywords
+- You still get keyword-matched results even if semantically distant
 
 ---
 
