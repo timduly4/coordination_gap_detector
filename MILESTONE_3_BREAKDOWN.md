@@ -13,7 +13,7 @@ Milestone 3 implements the first coordination gap detection capability: identify
 ### Changes:
 ```
 coordination-gap-detector/
-├── pyproject.toml              # Add spaCy, regex dependencies
+├── pyproject.toml              # Add regex dependencies (defer spaCy for now)
 └── src/
     ├── analysis/
     │   ├── __init__.py
@@ -30,15 +30,16 @@ tests/
 ```
 
 ### Specific Tasks:
-- [ ] Add spaCy or regex-based entity extraction
-- [ ] Implement person/author extraction
-- [ ] Implement team name detection
-- [ ] Extract project/feature mentions
-- [ ] Add technical term identification
+- [ ] Implement regex-based entity extraction (primary approach - lightweight and deterministic)
+- [ ] Implement person/author extraction (mentions, emails, names)
+- [ ] Implement team name detection (from channels and @team mentions)
+- [ ] Extract project/feature mentions (OAuth, API, etc.)
+- [ ] Add technical term identification (keywords, acronyms)
 - [ ] Create entity normalization (e.g., @alice → alice@company.com)
 - [ ] Add confidence scoring for extractions
 - [ ] Write comprehensive entity extraction tests
 - [ ] Add entity extraction to message processing pipeline
+- [ ] (Optional) Document how to add spaCy/NLP later if needed
 
 ### PR Description Template:
 ```markdown
@@ -81,15 +82,17 @@ Extract people, teams, and projects from messages for gap detection.
 
 ### Extraction Methods
 
-**Pattern-based (Regex)**
+**Pattern-based (Regex) - Primary Approach**
 - Fast and deterministic
 - Good for structured mentions (@mentions, #channels)
 - Handles email addresses, URLs
+- Sufficient for Milestone 3 goals
 
-**NLP-based (Optional: spaCy)**
-- Named entity recognition (NER)
-- Better for unstructured text
-- Handles context and ambiguity
+**NLP-based (Future Enhancement)**
+- Can add spaCy/NLP later if needed
+- Would provide NER for unstructured text
+- Better context handling
+- Note: Adds complexity (model downloads, heavier dependencies)
 
 ### Testing
 - [ ] Extracts @mentions correctly
@@ -403,11 +406,30 @@ result = client.parse_json(response)
 ```bash
 # .env
 ANTHROPIC_API_KEY=sk-ant-...
-CLAUDE_MODEL=claude-sonnet-4-5
+CLAUDE_MODEL=claude-sonnet-4-5-20250929  # Latest Sonnet 4.5
 CLAUDE_MAX_TOKENS=4096
 CLAUDE_TEMPERATURE=0.3
 CLAUDE_DAILY_QUOTA_TOKENS=1000000
 ```
+
+### Database Integration
+
+**How gaps are stored across databases**:
+
+- **PostgreSQL**: Detected gaps, evidence references, metadata
+  ```sql
+  CREATE TABLE gaps (
+    id VARCHAR PRIMARY KEY,
+    type VARCHAR NOT NULL,
+    impact_score FLOAT,
+    teams_involved JSON,
+    evidence_json JSON,
+    detected_at TIMESTAMP
+  );
+  ```
+
+- **ChromaDB**: Used for semantic clustering (already storing message embeddings)
+- **Elasticsearch**: Optional future enhancement - search gaps by entities/keywords
 ```
 
 **Commit Messages:**
@@ -514,6 +536,20 @@ verification = claude_client.verify_duplicate_work(
 
 if verification.is_duplicate and verification.confidence > 0.7:
     gaps.append(create_gap(cluster, teams, verification))
+```
+
+**Stage 5: Store in PostgreSQL**
+```python
+# Save detected gap to database for retrieval and tracking
+gap_record = Gap(
+    id=gap.gap_id,
+    type="DUPLICATE_WORK",
+    impact_score=gap.impact_score,
+    teams_involved=gap.teams,
+    evidence_json=gap.evidence,
+    detected_at=datetime.utcnow()
+)
+await db.add(gap_record)
 ```
 
 ### Detection Rules
@@ -768,13 +804,16 @@ score = overlap_ratio  # Direct from LLM assessment
 
 ### Cost Estimation
 
+**Important**: This estimates organizational waste cost, NOT Claude API cost.
+
 ```python
-# Engineering cost calculation
-avg_hourly_rate = 100  # $100/hour (loaded cost)
+# Engineering cost calculation (organizational waste)
+avg_hourly_rate = 100  # $100/hour (loaded cost per engineer)
 estimated_hours = calculate_time_investment(gap)
 estimated_cost = estimated_hours * avg_hourly_rate
 
-# Example: 60 hours × $100 = $6,000 wasted
+# Example: 60 hours × $100 = $6,000 wasted on duplicate work
+# This is separate from Claude API costs (~$0.01-0.05 per verification)
 ```
 
 ### Testing
@@ -802,7 +841,8 @@ estimated_cost = estimated_hours * avg_hourly_rate
   "estimated_cost": {
     "engineering_hours": 85,
     "dollar_value": 8500,
-    "explanation": "2 teams × ~40 hours each + coordination overhead"
+    "explanation": "2 teams × ~40 hours each + coordination overhead",
+    "note": "This is organizational waste cost, not Claude API cost"
   },
   "details": {
     "people_affected": 8,
@@ -1064,14 +1104,16 @@ docs: add OpenAPI documentation for gap endpoints
 **Time**: ~3-4 hours
 **Files Changed**: ~6-8 files
 
+**Note**: We already have 4 scenarios from Milestone 1 (oauth_discussion, decision_making, bug_report, feature_planning). This PR enhances those and adds new ones specifically for gap detection testing.
+
 ### Changes:
 ```
 scripts/
-└── generate_mock_data.py        # Updated with gap scenarios
+└── generate_mock_data.py        # Enhanced with gap detection annotations
 data/
 └── scenarios/
     ├── duplicate_work/
-    │   ├── oauth_scenario.json
+    │   ├── oauth_scenario.json       # Enhanced from existing oauth_discussion
     │   ├── api_redesign_scenario.json
     │   └── auth_migration_scenario.json
     └── README.md
@@ -1083,8 +1125,8 @@ tests/
 ```
 
 ### Specific Tasks:
-- [ ] Create realistic duplicate work scenarios
-- [ ] Generate OAuth integration scenario (2 teams)
+- [ ] Enhance existing oauth_discussion scenario with gap detection metadata
+- [ ] Extend existing scenarios with team annotations
 - [ ] Create API redesign scenario (platform + backend)
 - [ ] Add auth migration scenario (security + platform)
 - [ ] Include edge cases (false positives)
@@ -1110,13 +1152,14 @@ Realistic scenarios for testing and demonstrating gap detection.
 
 ### Scenarios Included
 
-#### **Scenario 1: OAuth Integration Duplication**
+#### **Scenario 1: OAuth Integration Duplication (Enhanced from Milestone 1)**
 
 **Setup**:
 - **Teams**: Platform Team, Auth Team
 - **Timeframe**: Dec 1-15, 2024
-- **Messages**: 24 messages across 2 Slack channels
+- **Messages**: Enhanced existing 8-message oauth_discussion to 24+ messages
 - **Overlap**: 14 days of parallel work
+- **Base**: Built on existing oauth_discussion scenario
 
 **Story**:
 ```
@@ -1348,20 +1391,20 @@ Comprehensive tests and documentation for gap detection system.
 ### Test Coverage
 
 **Component Coverage**:
-- Entity extraction: 92%
-- Semantic clustering: 95%
-- Duplicate work detection: 93%
-- Impact scoring: 90%
-- Gap API: 88%
-- LLM integration: 85% (mocked)
-- **Overall Milestone 3**: 90%+
+- Entity extraction: 88%+
+- Semantic clustering: 90%+
+- Duplicate work detection: 88%+
+- Impact scoring: 85%+
+- Gap API: 85%+
+- LLM integration: 80%+ (mocked)
+- **Overall Milestone 3**: 85%+ (consistent with Milestone 2's 87%)
 
 **Test Categories**:
-- Unit tests: 145 tests
-- Integration tests: 23 tests
-- API tests: 18 tests
+- Unit tests: 120+ tests
+- Integration tests: 20+ tests
+- API tests: 15+ tests
 - Scenario tests: 6 tests
-- **Total**: 192 tests
+- **Total**: 150+ tests (quality over quantity)
 
 ### Testing
 - [ ] All tests pass: `pytest`
@@ -1564,6 +1607,27 @@ docs: update README with Milestone 3 examples
 | **3H** | `feat/milestone-3-testing-docs` | 3-4h | ~15 | Tests, docs |
 
 **Total**: 24-35 hours across 8 PRs
+
+## Which PRs Can Be Done in Parallel?
+
+Understanding PR dependencies helps optimize development time:
+
+### Parallel Opportunities
+- **3A (Entity Extraction) + 3C (Claude API)** - Completely independent, can work in parallel
+- **3B (Clustering)** - Can start after 3A basics are done
+- **3E (Impact Scoring)** - Can be developed independently and integrated later
+
+### Sequential Dependencies
+- **3D (Duplicate Detection)** requires 3A, 3B, and 3C to be complete
+- **3F (Gap API)** requires 3D and 3E
+- **3G (Scenarios)** benefits from having 3D working (for validation)
+- **3H (Testing/Docs)** is final, requires everything
+
+### Recommended Sequence
+1. **Week 1**: 3A + 3C in parallel (entity extraction + Claude API)
+2. **Week 2**: 3B (clustering), then start 3E (impact scoring)
+3. **Week 3**: 3D (core detection - needs 3A, 3B, 3C)
+4. **Week 4**: 3F (API), 3G (scenarios), 3H (testing/docs)
 
 ## PR Workflow
 
