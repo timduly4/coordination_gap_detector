@@ -142,6 +142,9 @@ class HybridSearchFusion:
             # If not seen in semantic results, add it
             if doc_id not in all_docs:
                 all_docs[doc_id] = result
+            else:
+                # Document exists in semantic results - merge keyword score
+                all_docs[doc_id]["keyword_score"] = result.get("keyword_score")
 
         # Calculate RRF scores
         rrf_scores = []
