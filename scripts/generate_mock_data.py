@@ -1,12 +1,14 @@
 #!/usr/bin/env python3
 """
-Generate and seed mock Slack conversation data into the database and vector store.
+Generate and seed mock Slack conversation data into the database, vector store, and search index.
 
-This script creates realistic Slack conversation scenarios and stores them
-in PostgreSQL and ChromaDB (with embeddings) for development and testing.
+This script creates realistic Slack conversation scenarios and stores them in:
+- PostgreSQL (primary database)
+- ChromaDB (vector embeddings for semantic search)
+- Elasticsearch (BM25 keyword search)
 
 Usage:
-    # Generate all scenarios with embeddings
+    # Generate all scenarios with embeddings and search indexing
     python scripts/generate_mock_data.py --scenarios all
 
     # Generate specific scenarios
@@ -15,7 +17,7 @@ Usage:
     # Clear existing data before generating
     python scripts/generate_mock_data.py --scenarios all --clear
 
-    # Skip embeddings (faster, Postgres only)
+    # Skip embeddings (faster, Postgres + Elasticsearch only)
     python scripts/generate_mock_data.py --scenarios all --skip-embeddings
 """
 import argparse
@@ -32,6 +34,7 @@ from sqlalchemy import select
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from src.config import get_settings
+from src.db.elasticsearch import get_es_client
 from src.db.models import Message, Source
 from src.db.postgres import async_engine, get_db
 from src.db.vector_store import get_vector_store
@@ -83,13 +86,14 @@ async def ensure_slack_source(db: AsyncSession) -> Source:
     return source
 
 
-async def clear_existing_data(db: AsyncSession, clear_embeddings: bool = True) -> None:
+async def clear_existing_data(db: AsyncSession, clear_embeddings: bool = True, clear_search_index: bool = True) -> None:
     """
-    Clear existing mock data from the database and vector store.
+    Clear existing mock data from the database, vector store, and search index.
 
     Args:
         db: Database session
         clear_embeddings: Whether to also clear embeddings from vector store
+        clear_search_index: Whether to also clear Elasticsearch index
     """
     # Get Slack source
     result = await db.execute(
@@ -118,6 +122,15 @@ async def clear_existing_data(db: AsyncSession, clear_embeddings: bool = True) -
             print(f"✓ Cleared all embeddings from ChromaDB")
         except Exception as e:
             print(f"⚠️  Warning: Failed to clear vector store: {e}")
+
+    # Clear Elasticsearch index
+    if clear_search_index:
+        try:
+            es_client = get_es_client()
+            if es_client.delete_index("messages"):
+                print(f"✓ Deleted Elasticsearch index 'messages'")
+        except Exception as e:
+            print(f"⚠️  Warning: Failed to clear Elasticsearch index: {e}")
 
 
 async def insert_mock_messages(
@@ -196,6 +209,51 @@ def populate_vector_store(db_messages: List[Message]) -> int:
         return 0
 
 
+def populate_elasticsearch(db_messages: List[Message]) -> int:
+    """
+    Populate Elasticsearch with messages for BM25 keyword search.
+
+    Args:
+        db_messages: List of Message objects from the database
+
+    Returns:
+        Number of messages indexed
+    """
+    if not db_messages:
+        return 0
+
+    try:
+        es_client = get_es_client()
+
+        # Create index if it doesn't exist
+        es_client.create_messages_index("messages")
+
+        # Prepare documents for bulk indexing
+        es_documents = []
+        for msg in db_messages:
+            doc = {
+                "message_id": str(msg.id),
+                "content": msg.content,
+                "source": "slack",
+                "channel": msg.channel,
+                "author": msg.author,
+                "timestamp": msg.timestamp.isoformat() if msg.timestamp else None,
+                "metadata": msg.message_metadata or {},
+            }
+            if msg.thread_id:
+                doc["thread_id"] = msg.thread_id
+
+            es_documents.append(doc)
+
+        # Bulk index documents
+        success_count, failed_count = es_client.bulk_index_messages("messages", es_documents)
+        return success_count
+
+    except Exception as e:
+        print(f"⚠️  Warning: Failed to populate Elasticsearch: {e}")
+        return 0
+
+
 async def generate_mock_data(scenarios: List[str], clear: bool = False, skip_embeddings: bool = False) -> None:
     """
     Generate and insert mock data for specified scenarios.
@@ -255,25 +313,32 @@ async def generate_mock_data(scenarios: List[str], clear: bool = False, skip_emb
         await db.commit()
         print()
 
+        # Fetch all messages for indexing
+        result = await db.execute(
+            select(Message).where(Message.source_id == source_id)
+        )
+        all_messages = result.scalars().all()
+
         # Populate vector store with embeddings
         total_embeddings = 0
         if not skip_embeddings:
             print("Generating embeddings for vector store...")
-            # Fetch all messages that were just inserted
-            result = await db.execute(
-                select(Message).where(Message.source_id == source_id)
-            )
-            all_messages = result.scalars().all()
-
             total_embeddings = populate_vector_store(all_messages)
             print(f"✓ Created {total_embeddings} embeddings in ChromaDB")
             print()
+
+        # Populate Elasticsearch for keyword search
+        print("Indexing messages to Elasticsearch...")
+        total_indexed = populate_elasticsearch(all_messages)
+        print(f"✓ Indexed {total_indexed} messages in Elasticsearch")
+        print()
 
         print(f"{'=' * 60}")
         print(f"✅ Successfully generated:")
         print(f"   Messages: {total_messages} (across {len(scenarios)} scenarios)")
         if not skip_embeddings:
             print(f"   Embeddings: {total_embeddings}")
+        print(f"   Elasticsearch: {total_indexed}")
         print(f"{'=' * 60}")
         print()
         print("Verify in database:")
@@ -282,6 +347,9 @@ async def generate_mock_data(scenarios: List[str], clear: bool = False, skip_emb
             print()
             print("Test semantic search:")
             print('  docker compose exec api python -c "from src.db.vector_store import get_vector_store; vs = get_vector_store(); print(vs.search(\\"OAuth\\", limit=3))"')
+        print()
+        print("Test BM25 search:")
+        print('  curl -X POST http://localhost:8000/api/v1/search/ -H "Content-Type: application/json" -d \'{"query": "OAuth", "limit": 3}\'')
 
 
 def main():

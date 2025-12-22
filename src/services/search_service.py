@@ -179,8 +179,17 @@ class SearchService:
         # Convert to standard format
         bm25_results = []
         for result in keyword_results["results"]:
+            # Convert message_id from string to int (ES stores as string)
+            message_id = result.get("message_id")
+            try:
+                message_id_int = int(message_id) if message_id else None
+            except (ValueError, TypeError):
+                logger.warning(f"Invalid message_id in ES result: {message_id}")
+                continue
+
             bm25_results.append({
                 **result,
+                "message_id": message_id_int,  # Ensure integer for DB lookup
                 "keyword_score": result.get("score", 0.0),
             })
 
@@ -223,8 +232,17 @@ class SearchService:
 
         keyword_results = []
         for result in keyword_results_raw.get("results", []):
+            # Convert message_id from string to int (ES stores as string)
+            message_id = result.get("message_id")
+            try:
+                message_id_int = int(message_id) if message_id else None
+            except (ValueError, TypeError):
+                logger.warning(f"Invalid message_id in ES result: {message_id}")
+                continue
+
             keyword_results.append({
                 **result,
+                "message_id": message_id_int,  # Ensure integer for DB lookup
                 "keyword_score": result.get("score", 0.0),
             })
 
@@ -274,8 +292,17 @@ class SearchService:
 
         keyword_results = []
         for result in keyword_results_raw.get("results", []):
+            # Convert message_id from string to int (ES stores as string)
+            message_id = result.get("message_id")
+            try:
+                message_id_int = int(message_id) if message_id else None
+            except (ValueError, TypeError):
+                logger.warning(f"Invalid message_id in ES result: {message_id}")
+                continue
+
             keyword_results.append({
                 **result,
+                "message_id": message_id_int,  # Ensure integer for DB lookup
                 "keyword_score": result.get("score", 0.0),
             })
 

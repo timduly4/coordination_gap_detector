@@ -53,44 +53,84 @@ curl http://localhost:9200
 ### Step 2: Load Mock Data
 
 ```bash
-# Generate and load mock Slack messages
-uv run python scripts/generate_mock_data.py --load
+# Run database migrations
+docker compose exec api alembic upgrade head
 
-# Verify data loaded
-docker compose exec postgres psql -U user -d coordination -c "SELECT COUNT(*) FROM messages;"
-# Should show number of messages loaded
+# Generate and load mock Slack messages (run inside API container to use correct ChromaDB)
+docker compose exec api python scripts/generate_mock_data.py --scenarios all --clear
+
+# Verify data loaded in PostgreSQL
+docker compose exec postgres psql -U coordination_user -d coordination -c "SELECT COUNT(*) FROM messages;"
+# Should show 24 messages loaded
+
+# Verify Elasticsearch index
+curl -s http://localhost:9200/messages/_count | jq .
+# Should show {"count": 24}
+
+# Verify ChromaDB embeddings
+docker compose exec api python -c "from src.db.vector_store import get_vector_store; vs = get_vector_store(); print(f'ChromaDB count: {vs.get_collection_count()}')"
+# Should show: ChromaDB count: 24
+
+# IMPORTANT: Restart API to reinitialize ChromaDB collection reference
+docker compose restart api && sleep 5
 ```
 
 **What to look for**:
 - ✅ Mock data generation completes without errors
-- ✅ Messages inserted into database
-- ✅ Both Postgres and vector store populated
+- ✅ Messages inserted into database (24 messages)
+- ✅ Embeddings created in ChromaDB (24 embeddings)
+- ✅ Messages indexed in Elasticsearch (24 documents)
+- ✅ API restarted after data load (needed for semantic search to work)
 
-### Step 3: Start the API
+### Step 3: Verify API is Running
 
 ```bash
-# Start FastAPI server
-uv run uvicorn src.main:app --reload --port 8000
-
-# In another terminal, test health endpoint
-curl http://localhost:8000/health
+# API is already running from docker compose and was restarted after data load
+# Test detailed health endpoint to confirm all services
+curl http://localhost:8000/health/detailed
 ```
 
 **Expected response**:
 ```json
 {
   "status": "healthy",
-  "database": "connected",
-  "elasticsearch": "connected",
-  "vector_store": "connected"
+  "environment": "development",
+  "services": {
+    "postgres": {
+      "status": "connected",
+      "url": "postgres:5432/coordination"
+    },
+    "redis": {
+      "status": "not_implemented",
+      "url": "redis://redis:6379"
+    },
+    "chromadb": {
+      "status": "connected",
+      "collection": "coordination_messages",
+      "document_count": 24,
+      "persist_dir": "/app/data/chroma"
+    },
+    "elasticsearch": {
+      "status": "connected",
+      "url": "http://elasticsearch:9200",
+      "cluster_status": "green",
+      "cluster_name": "docker-cluster"
+    }
+  }
 }
 ```
+
+**What to verify**:
+- ✅ All services show "connected" status
+- ✅ ChromaDB document_count: 24
+- ✅ Elasticsearch cluster_status: "green"
+- ✅ Postgres connected to correct database
 
 ### Step 4: Test Basic Search
 
 ```bash
 # Simple semantic search
-curl -X POST http://localhost:8000/api/v1/search \
+curl -X POST http://localhost:8000/api/v1/search/ \
   -H "Content-Type: application/json" \
   -d '{
     "query": "OAuth implementation",
@@ -107,7 +147,7 @@ curl -X POST http://localhost:8000/api/v1/search \
 
 ```bash
 # Hybrid search with RRF fusion
-curl -X POST http://localhost:8000/api/v1/search \
+curl -X POST http://localhost:8000/api/v1/search/ \
   -H "Content-Type: application/json" \
   -d '{
     "query": "OAuth implementation decisions",
@@ -128,21 +168,21 @@ curl -X POST http://localhost:8000/api/v1/search \
 cat > compare_strategies.sh << 'EOF'
 #!/bin/bash
 echo "=== Semantic Only ==="
-curl -s -X POST http://localhost:8000/api/v1/search \
+curl -s -X POST http://localhost:8000/api/v1/search/ \
   -H "Content-Type: application/json" \
   -d '{"query": "OAuth", "ranking_strategy": "semantic", "limit": 3}' \
   | jq '.results[] | {content: .content[:50], score: .score}'
 
 echo ""
 echo "=== BM25 Only ==="
-curl -s -X POST http://localhost:8000/api/v1/search \
+curl -s -X POST http://localhost:8000/api/v1/search/ \
   -H "Content-Type: application/json" \
   -d '{"query": "OAuth", "ranking_strategy": "bm25", "limit": 3}' \
   | jq '.results[] | {content: .content[:50], score: .score}'
 
 echo ""
 echo "=== Hybrid RRF ==="
-curl -s -X POST http://localhost:8000/api/v1/search \
+curl -s -X POST http://localhost:8000/api/v1/search/ \
   -H "Content-Type: application/json" \
   -d '{"query": "OAuth", "ranking_strategy": "hybrid_rrf", "limit": 3}' \
   | jq '.results[] | {content: .content[:50], score: .score}'
@@ -542,7 +582,7 @@ export LOG_LEVEL=DEBUG
 uv run uvicorn src.main:app --reload --log-level debug
 
 # In another terminal, make a request
-curl -X POST http://localhost:8000/api/v1/search \
+curl -X POST http://localhost:8000/api/v1/search/ \
   -H "Content-Type: application/json" \
   -d '{"query": "OAuth", "ranking_strategy": "hybrid_rrf", "limit": 3}'
 
@@ -637,7 +677,7 @@ docker compose up -d
 uv run uvicorn src.main:app --reload
 
 # Test search strategies
-curl -X POST http://localhost:8000/api/v1/search \
+curl -X POST http://localhost:8000/api/v1/search/ \
   -H "Content-Type: application/json" \
   -d '{"query": "OAuth", "ranking_strategy": "hybrid_rrf"}'
 
