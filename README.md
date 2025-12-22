@@ -836,8 +836,8 @@ curl http://localhost:9200/messages/_count
 # 2. Verify documents are indexed
 curl http://localhost:9200/messages/_search?pretty
 
-# 3. Reindex messages
-docker compose exec api python scripts/reindex_elasticsearch.py
+# 3. Reindex messages (regenerate mock data)
+docker compose exec api python scripts/generate_mock_data.py --scenarios all --clear
 
 # 4. Test with known query
 curl -X POST http://localhost:8000/api/v1/search/ \
