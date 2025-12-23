@@ -123,7 +123,6 @@ entities = extractor.extract(message)
 #   "topics": ["integration"]
 # }
 ```
-```
 
 **Commit Messages:**
 ```
@@ -247,7 +246,6 @@ for cluster in clusters:
     print(f"  Similarity: {cluster.avg_similarity:.2f}")
     print(f"  Timespan: {cluster.timespan_days} days")
     print(f"  Messages: {[m.content[:50] for m in cluster.messages]}")
-```
 ```
 
 **Commit Messages:**
@@ -430,7 +428,6 @@ CLAUDE_DAILY_QUOTA_TOKENS=1000000
 
 - **ChromaDB**: Used for semantic clustering (already storing message embeddings)
 - **Elasticsearch**: Optional future enhancement - search gaps by entities/keywords
-```
 
 **Commit Messages:**
 ```
@@ -637,7 +634,6 @@ Ranked by:
     "reasoning": "Both teams are independently implementing OAuth2..."
   }
 }
-```
 ```
 
 **Commit Messages:**
@@ -851,7 +847,6 @@ estimated_cost = estimated_hours * avg_hourly_rate
     "commits_found": 12
   }
 }
-```
 ```
 
 **Commit Messages:**
@@ -1085,7 +1080,6 @@ Includes:
 - Example requests
 - Error response formats
 - Authentication (future)
-```
 
 **Commit Messages:**
 ```
@@ -1578,7 +1572,7 @@ After Milestone 3:
 - ✅ Can detect duplicate work end-to-end
 - ✅ Ready for Milestone 4: Real Slack integration
 - ✅ Foundation for additional gap types (Milestone 6)
-```
+
 
 **Commit Messages:**
 ```
