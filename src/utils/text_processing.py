@@ -285,3 +285,140 @@ def combine_text_fields(*fields: str, separator: str = " ") -> str:
     # Filter out None and empty strings
     valid_fields = [f.strip() for f in fields if f and f.strip()]
     return separator.join(valid_fields)
+
+
+# Entity extraction utilities
+
+
+def normalize_username(username: str, domain: str = "company.com") -> str:
+    """
+    Normalize a username to email format.
+
+    Args:
+        username: Username (with or without @ prefix)
+        domain: Email domain to append
+
+    Returns:
+        Normalized email address
+
+    Examples:
+        >>> normalize_username("@alice", "example.com")
+        "alice@example.com"
+        >>> normalize_username("alice@example.com", "example.com")
+        "alice@example.com"
+    """
+    # Remove @ prefix if present
+    username = username.lstrip("@")
+
+    # If already an email, return as-is
+    if "@" in username:
+        return username.lower()
+
+    # Add domain
+    return f"{username}@{domain}".lower()
+
+
+def normalize_team_name(team: str) -> str:
+    """
+    Normalize a team name to standard format.
+
+    Args:
+        team: Team name (with or without prefixes/suffixes)
+
+    Returns:
+        Normalized team name
+
+    Examples:
+        >>> normalize_team_name("@platform-team")
+        "platform-team"
+        >>> normalize_team_name("#platform")
+        "platform-team"
+    """
+    # Remove @ and # prefixes
+    team = team.lstrip("@#").lower()
+
+    # Replace underscores with hyphens
+    team = team.replace("_", "-")
+
+    # Ensure -team suffix
+    if not team.endswith("-team"):
+        team = f"{team}-team"
+
+    return team
+
+
+def is_email(text: str) -> bool:
+    """
+    Check if text is a valid email address.
+
+    Args:
+        text: Text to check
+
+    Returns:
+        True if valid email format
+
+    Examples:
+        >>> is_email("alice@example.com")
+        True
+        >>> is_email("not an email")
+        False
+    """
+    email_pattern = r"^[a-zA-Z0-9._-]+@[a-zA-Z0-9.-]+\.[a-zA-Z]{2,}$"
+    return bool(re.match(email_pattern, text))
+
+
+def extract_domain_from_email(email: str) -> str:
+    """
+    Extract domain from email address.
+
+    Args:
+        email: Email address
+
+    Returns:
+        Domain portion of email
+
+    Examples:
+        >>> extract_domain_from_email("alice@example.com")
+        "example.com"
+    """
+    if "@" in email:
+        return email.split("@")[1].lower()
+    return ""
+
+
+def is_mention(text: str) -> bool:
+    """
+    Check if text is a @mention.
+
+    Args:
+        text: Text to check
+
+    Returns:
+        True if text is a mention
+
+    Examples:
+        >>> is_mention("@alice")
+        True
+        >>> is_mention("alice")
+        False
+    """
+    return bool(re.match(r"^@[a-zA-Z0-9_-]+$", text))
+
+
+def is_channel(text: str) -> bool:
+    """
+    Check if text is a #channel.
+
+    Args:
+        text: Text to check
+
+    Returns:
+        True if text is a channel
+
+    Examples:
+        >>> is_channel("#engineering")
+        True
+        >>> is_channel("engineering")
+        False
+    """
+    return bool(re.match(r"^#[a-zA-Z0-9_-]+$", text))
