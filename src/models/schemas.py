@@ -309,3 +309,69 @@ class EvaluationStatisticsResponse(BaseModel):
 
     num_queries: int = Field(..., description="Number of queries with judgments", ge=0)
     num_judgments: int = Field(..., description="Total number of judgments", ge=0)
+
+
+# Clustering Schemas
+
+
+class ClusterResponse(BaseModel):
+    """Schema for cluster response."""
+
+    cluster_id: str = Field(..., description="Unique cluster identifier")
+    message_ids: List[int] = Field(..., description="Database message IDs in cluster")
+    size: int = Field(..., description="Number of messages in cluster", ge=0)
+    avg_similarity: float = Field(
+        ..., description="Average intra-cluster similarity", ge=0.0, le=1.0
+    )
+    timespan_days: Optional[float] = Field(
+        None, description="Timespan from first to last message in days"
+    )
+    participant_count: Optional[int] = Field(
+        None, description="Number of unique authors", ge=0
+    )
+    channels: Optional[List[str]] = Field(None, description="Channels involved in cluster")
+    teams: Optional[List[str]] = Field(None, description="Teams identified in cluster")
+    cohesion_score: Optional[float] = Field(
+        None, description="Cluster cohesion quality", ge=0.0, le=1.0
+    )
+    start_time: Optional[datetime] = Field(None, description="First message timestamp")
+    end_time: Optional[datetime] = Field(None, description="Last message timestamp")
+    label: Optional[str] = Field(None, description="Cluster topic label")
+    created_at: datetime = Field(..., description="When cluster was created")
+
+
+class ClusteringRequest(BaseModel):
+    """Schema for clustering request."""
+
+    similarity_threshold: float = Field(
+        default=0.85,
+        description="Minimum similarity for clustering (0-1)",
+        ge=0.0,
+        le=1.0,
+    )
+    min_cluster_size: int = Field(
+        default=2, description="Minimum messages per cluster", ge=1, le=100
+    )
+    time_window_days: Optional[int] = Field(
+        None, description="Time window for clustering (days)", ge=1, le=365
+    )
+    source_types: Optional[List[str]] = Field(
+        None, description="Filter by source types"
+    )
+    channels: Optional[List[str]] = Field(None, description="Filter by channels")
+    date_from: Optional[datetime] = Field(None, description="Filter messages from this date")
+    date_to: Optional[datetime] = Field(None, description="Filter messages until this date")
+
+
+class ClusteringResponse(BaseModel):
+    """Schema for clustering response."""
+
+    clusters: List[ClusterResponse] = Field(..., description="List of clusters found")
+    total_clusters: int = Field(..., description="Number of clusters", ge=0)
+    total_messages: int = Field(..., description="Total messages analyzed", ge=0)
+    clustered_messages: int = Field(..., description="Messages in clusters", ge=0)
+    coverage: float = Field(
+        ..., description="Fraction of messages clustered", ge=0.0, le=1.0
+    )
+    quality_metrics: Dict[str, float] = Field(..., description="Clustering quality metrics")
+    clustering_time_ms: int = Field(..., description="Time taken for clustering", ge=0)
