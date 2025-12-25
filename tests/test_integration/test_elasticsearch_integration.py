@@ -256,9 +256,8 @@ class TestElasticsearchIntegration:
 
         es_client.bulk_index_messages(test_index, messages)
 
-        # Wait for indexing
-        import time
-        time.sleep(1)
+        # Force index refresh to make documents immediately searchable
+        es_client.client.indices.refresh(index=test_index)
 
         # Search only in #engineering channel
         results = es_client.search_messages(
