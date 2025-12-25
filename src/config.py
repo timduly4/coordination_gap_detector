@@ -27,6 +27,19 @@ class Settings(BaseSettings):
 
     # API Keys
     anthropic_api_key: Optional[str] = Field(default=None, description="Anthropic API key")
+
+    # Claude API Configuration
+    claude_model: str = Field(
+        default="claude-sonnet-4-5-20250929", description="Claude model to use"
+    )
+    claude_max_tokens: int = Field(default=4096, description="Max tokens for Claude responses")
+    claude_temperature: float = Field(
+        default=0.3, description="Temperature for Claude completions"
+    )
+    claude_daily_quota_tokens: int = Field(
+        default=1000000, description="Daily token quota for Claude API"
+    )
+
     slack_bot_token: Optional[str] = Field(default=None, description="Slack bot token")
     slack_app_token: Optional[str] = Field(default=None, description="Slack app token")
     github_token: Optional[str] = Field(default=None, description="GitHub API token")

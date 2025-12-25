@@ -1156,7 +1156,7 @@ Realistic scenarios for testing and demonstrating gap detection.
 - **Base**: Built on existing oauth_discussion scenario
 
 **Story**:
-```
+
 Dec 1, 09:00 - Alice (Platform): "Starting OAuth2 implementation for our API gateway"
 Dec 1, 14:20 - Bob (Auth): "We're building OAuth support for the new auth service"
 Dec 3, 10:15 - Alice: "Finished research on OAuth flows, going with authorization code"
@@ -1313,7 +1313,7 @@ uv run python scripts/visualize_scenario.py oauth_duplication
 
 # Outputs timeline showing parallel work
 ```
-```
+
 
 **Commit Messages:**
 ```
