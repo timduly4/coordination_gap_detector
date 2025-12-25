@@ -313,6 +313,39 @@ class ClaudeClient:
             "total_estimated_cost_usd": input_cost + output_cost,
         }
 
+    async def complete_async(
+        self,
+        prompt: str,
+        system_prompt: Optional[str] = None,
+        max_tokens: Optional[int] = None,
+        temperature: Optional[float] = None,
+        **kwargs: Any,
+    ) -> ClaudeResponse:
+        """
+        Async version of complete method.
+
+        Currently wraps sync version. Future enhancement: implement true async.
+
+        Args:
+            prompt: User prompt
+            system_prompt: Optional system prompt
+            max_tokens: Maximum tokens to generate
+            temperature: Temperature for completion
+            **kwargs: Additional arguments for Claude API
+
+        Returns:
+            ClaudeResponse with content and metadata
+        """
+        # For now, wrap sync version
+        # TODO: Implement true async support with asyncio
+        return self.complete(
+            prompt=prompt,
+            system_prompt=system_prompt,
+            max_tokens=max_tokens,
+            temperature=temperature,
+            **kwargs,
+        )
+
 
 class AsyncClaudeClient(ClaudeClient):
     """

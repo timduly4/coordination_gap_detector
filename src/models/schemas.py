@@ -375,3 +375,178 @@ class ClusteringResponse(BaseModel):
     )
     quality_metrics: Dict[str, float] = Field(..., description="Clustering quality metrics")
     clustering_time_ms: int = Field(..., description="Time taken for clustering", ge=0)
+
+
+# Gap Detection Schemas
+
+
+class EvidenceItem(BaseModel):
+    """Schema for a single piece of evidence supporting a gap."""
+
+    source: str = Field(..., description="Source type (slack, github, etc.)")
+    message_id: Optional[int] = Field(None, description="Database message ID")
+    external_id: Optional[str] = Field(None, description="ID in source system")
+    channel: Optional[str] = Field(None, description="Channel or location")
+    author: Optional[str] = Field(None, description="Message author")
+    content: str = Field(..., description="Evidence content/quote")
+    timestamp: datetime = Field(..., description="When this evidence was created")
+    relevance_score: float = Field(..., description="Relevance to gap (0-1)", ge=0.0, le=1.0)
+    team: Optional[str] = Field(None, description="Team associated with this evidence")
+    metadata: Optional[Dict[str, Any]] = Field(None, description="Additional metadata")
+
+
+class TemporalOverlap(BaseModel):
+    """Schema for temporal overlap analysis."""
+
+    start: datetime = Field(..., description="Start of overlap period")
+    end: datetime = Field(..., description="End of overlap period")
+    overlap_days: int = Field(..., description="Number of overlapping days", ge=0)
+    team_timelines: Optional[Dict[str, Dict[str, str]]] = Field(
+        None, description="Timeline for each team (start/end dates)"
+    )
+
+
+class LLMVerification(BaseModel):
+    """Schema for LLM verification results."""
+
+    is_duplicate: bool = Field(..., description="Whether this is duplicate work")
+    confidence: float = Field(..., description="LLM confidence (0-1)", ge=0.0, le=1.0)
+    reasoning: str = Field(..., description="Explanation of the determination")
+    evidence: List[str] = Field(..., description="Key quotes supporting the determination")
+    recommendation: str = Field(..., description="Recommended action")
+    overlap_ratio: float = Field(
+        ..., description="Estimated overlap ratio (0-1)", ge=0.0, le=1.0
+    )
+
+
+class ImpactBreakdown(BaseModel):
+    """Schema for impact scoring breakdown."""
+
+    team_size_score: float = Field(..., description="Score based on team size", ge=0.0, le=1.0)
+    time_investment_score: float = Field(
+        ..., description="Score based on time invested", ge=0.0, le=1.0
+    )
+    project_criticality_score: float = Field(
+        ..., description="Score based on project importance", ge=0.0, le=1.0
+    )
+    velocity_impact_score: float = Field(
+        ..., description="Score based on velocity impact", ge=0.0, le=1.0
+    )
+    duplicate_effort_score: float = Field(
+        ..., description="Score based on duplication amount", ge=0.0, le=1.0
+    )
+
+
+class CostEstimate(BaseModel):
+    """Schema for cost estimation."""
+
+    engineering_hours: float = Field(..., description="Estimated engineering hours wasted", ge=0.0)
+    dollar_value: float = Field(..., description="Estimated dollar cost", ge=0.0)
+    explanation: str = Field(..., description="Explanation of cost calculation")
+    note: str = Field(
+        default="This is organizational waste cost, not Claude API cost",
+        description="Clarification note"
+    )
+
+
+class CoordinationGap(BaseModel):
+    """Schema for a detected coordination gap."""
+
+    id: str = Field(..., description="Unique gap identifier")
+    type: str = Field(..., description="Gap type (DUPLICATE_WORK, etc.)")
+    title: str = Field(..., description="Human-readable gap title")
+    topic: str = Field(..., description="Main topic of the gap")
+    teams_involved: List[str] = Field(..., description="Teams involved in the gap")
+    impact_score: float = Field(..., description="Overall impact score (0-1)", ge=0.0, le=1.0)
+    impact_tier: str = Field(..., description="Impact tier (CRITICAL, HIGH, MEDIUM, LOW)")
+    confidence: float = Field(..., description="Detection confidence (0-1)", ge=0.0, le=1.0)
+
+    # Evidence and verification
+    evidence: List[EvidenceItem] = Field(..., description="Supporting evidence")
+    temporal_overlap: Optional[TemporalOverlap] = Field(
+        None, description="Temporal overlap analysis"
+    )
+    verification: Optional[LLMVerification] = Field(None, description="LLM verification results")
+
+    # Impact details
+    impact_breakdown: Optional[ImpactBreakdown] = Field(
+        None, description="Detailed impact scoring"
+    )
+    estimated_cost: Optional[CostEstimate] = Field(None, description="Cost estimation")
+
+    # Insights and recommendations
+    insight: str = Field(..., description="AI-generated insight about the gap")
+    recommendation: str = Field(..., description="Recommended action to address gap")
+
+    # Metadata
+    detected_at: datetime = Field(..., description="When the gap was detected")
+    cluster_id: Optional[str] = Field(None, description="Source cluster ID")
+    people_affected: Optional[int] = Field(None, description="Number of people affected", ge=0)
+    timespan_days: Optional[int] = Field(None, description="Timespan of the gap", ge=0)
+    messages_analyzed: Optional[int] = Field(None, description="Number of messages analyzed", ge=0)
+
+
+class GapDetectionRequest(BaseModel):
+    """Schema for gap detection request."""
+
+    timeframe_days: int = Field(
+        default=30, description="Timeframe to analyze (days)", ge=1, le=365
+    )
+    sources: List[str] = Field(
+        default=["slack"], description="Source types to analyze"
+    )
+    gap_types: List[str] = Field(
+        default=["duplicate_work"], description="Types of gaps to detect"
+    )
+    teams: Optional[List[str]] = Field(None, description="Filter by specific teams")
+    min_impact_score: float = Field(
+        default=0.0, description="Minimum impact score (0-1)", ge=0.0, le=1.0
+    )
+    include_evidence: bool = Field(default=True, description="Include evidence in response")
+    channels: Optional[List[str]] = Field(None, description="Filter by specific channels")
+    max_gaps: Optional[int] = Field(None, description="Maximum gaps to return", ge=1, le=100)
+
+
+class GapDetectionMetadata(BaseModel):
+    """Schema for gap detection metadata."""
+
+    total_gaps: int = Field(..., description="Total gaps detected", ge=0)
+    critical_gaps: int = Field(..., description="Critical impact gaps", ge=0)
+    high_gaps: int = Field(..., description="High impact gaps", ge=0)
+    medium_gaps: int = Field(..., description="Medium impact gaps", ge=0)
+    low_gaps: int = Field(..., description="Low impact gaps", ge=0)
+    detection_time_ms: int = Field(..., description="Detection time in milliseconds", ge=0)
+    messages_analyzed: int = Field(..., description="Total messages analyzed", ge=0)
+    clusters_found: int = Field(..., description="Total clusters found", ge=0)
+    llm_calls: Optional[int] = Field(None, description="Number of LLM API calls made", ge=0)
+
+
+class GapDetectionResponse(BaseModel):
+    """Schema for gap detection response."""
+
+    gaps: List[CoordinationGap] = Field(..., description="Detected coordination gaps")
+    metadata: GapDetectionMetadata = Field(..., description="Detection metadata")
+
+
+class GapListRequest(BaseModel):
+    """Schema for listing gaps with filters."""
+
+    gap_type: Optional[str] = Field(None, description="Filter by gap type")
+    min_impact_score: float = Field(
+        default=0.0, description="Minimum impact score", ge=0.0, le=1.0
+    )
+    teams: Optional[List[str]] = Field(None, description="Filter by teams")
+    start_date: Optional[datetime] = Field(None, description="Filter from date")
+    end_date: Optional[datetime] = Field(None, description="Filter to date")
+    page: int = Field(default=1, description="Page number", ge=1)
+    limit: int = Field(default=10, description="Results per page", ge=1, le=100)
+
+
+class GapListResponse(BaseModel):
+    """Schema for gap list response."""
+
+    gaps: List[CoordinationGap] = Field(..., description="List of gaps")
+    total: int = Field(..., description="Total number of gaps", ge=0)
+    page: int = Field(..., description="Current page", ge=1)
+    limit: int = Field(..., description="Results per page", ge=1)
+    has_more: bool = Field(..., description="Whether there are more results")

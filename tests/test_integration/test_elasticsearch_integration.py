@@ -100,9 +100,8 @@ class TestElasticsearchIntegration:
 
         assert success is True
 
-        # Wait a bit for indexing (ES is near-real-time)
-        import time
-        time.sleep(1)
+        # Force index refresh to make documents immediately searchable
+        es_client.client.indices.refresh(index=test_index)
 
         # Verify document count
         count = es_client.get_document_count(test_index)
@@ -130,9 +129,8 @@ class TestElasticsearchIntegration:
         assert success == 10
         assert failed == 0
 
-        # Wait for indexing
-        import time
-        time.sleep(1)
+        # Force index refresh to make documents immediately searchable
+        es_client.client.indices.refresh(index=test_index)
 
         # Verify document count
         count = es_client.get_document_count(test_index)
@@ -172,9 +170,8 @@ class TestElasticsearchIntegration:
 
         es_client.bulk_index_messages(test_index, messages)
 
-        # Wait for indexing
-        import time
-        time.sleep(1)
+        # Force index refresh to make documents immediately searchable
+        es_client.client.indices.refresh(index=test_index)
 
         # Search for OAuth-related messages
         results = es_client.search_messages(test_index, "OAuth authentication", size=10)
@@ -213,9 +210,8 @@ class TestElasticsearchIntegration:
 
         es_client.bulk_index_messages(test_index, messages)
 
-        # Wait for indexing
-        import time
-        time.sleep(1)
+        # Force index refresh to make documents immediately searchable
+        es_client.client.indices.refresh(index=test_index)
 
         # Search only in Slack messages
         results = es_client.search_messages(
@@ -256,9 +252,8 @@ class TestElasticsearchIntegration:
 
         es_client.bulk_index_messages(test_index, messages)
 
-        # Wait for indexing
-        import time
-        time.sleep(1)
+        # Force index refresh to make documents immediately searchable
+        es_client.client.indices.refresh(index=test_index)
 
         # Search only in #engineering channel
         results = es_client.search_messages(
@@ -307,9 +302,8 @@ class TestElasticsearchIntegration:
 
         es_client.bulk_index_messages(test_index, messages)
 
-        # Wait for indexing
-        import time
-        time.sleep(1)
+        # Force index refresh to make documents immediately searchable
+        es_client.client.indices.refresh(index=test_index)
 
         # Search
         results = es_client.search_messages(test_index, "OAuth implementation", size=10)
@@ -340,9 +334,8 @@ class TestElasticsearchIntegration:
 
         assert success is True
 
-        # Wait for indexing
-        import time
-        time.sleep(1)
+        # Force index refresh to make documents immediately searchable
+        es_client.client.indices.refresh(index=test_index)
 
         count = es_client.get_document_count(test_index)
         assert count >= 1
@@ -370,9 +363,8 @@ class TestElasticsearchIntegration:
         assert success == 100
         assert failed == 0
 
-        # Wait for indexing
-        import time
-        time.sleep(2)
+        # Force index refresh to make documents immediately searchable
+        es_client.client.indices.refresh(index=test_index)
 
         # Verify all messages were indexed
         count = es_client.get_document_count(test_index)
@@ -396,9 +388,8 @@ class TestElasticsearchIntegration:
 
         assert success is True
 
-        # Wait for indexing
-        import time
-        time.sleep(1)
+        # Force index refresh to make documents immediately searchable
+        es_client.client.indices.refresh(index=test_index)
 
         # Search should handle special characters
         results = es_client.search_messages(test_index, "mentions hashtags", size=10)
@@ -420,9 +411,8 @@ class TestElasticsearchIntegration:
             timestamp=now.isoformat(),
         )
 
-        # Wait for indexing
-        import time
-        time.sleep(1)
+        # Force index refresh to make documents immediately searchable
+        es_client.client.indices.refresh(index=test_index)
 
         # Empty query should still return results
         results = es_client.search_messages(test_index, "", size=10)
@@ -451,9 +441,8 @@ class TestElasticsearchIntegration:
 
         es_client.bulk_index_messages(test_index, messages_batch1)
 
-        # Wait briefly
-        import time
-        time.sleep(1)
+        # Force index refresh to make documents immediately searchable
+        es_client.client.indices.refresh(index=test_index)
 
         # Search while more indexing happens
         results1 = es_client.search_messages(test_index, "message", size=10)
@@ -472,7 +461,7 @@ class TestElasticsearchIntegration:
         ]
 
         es_client.bulk_index_messages(test_index, messages_batch2)
-        time.sleep(1)
+        es_client.client.indices.refresh(index=test_index)
 
         # Search again
         results2 = es_client.search_messages(test_index, "message", size=10)
