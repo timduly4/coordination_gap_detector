@@ -169,3 +169,16 @@ celerybeat.pid
 *~
 *.bak
 *.backup
+
+# Personal notes and scratch files
+NOTES.md
+notes.md
+TODO.txt
+todo.txt
+scratch.md
+scratch/
+notes/
+*.notes
+*.scratch
+SCRATCH.md
+personal/
