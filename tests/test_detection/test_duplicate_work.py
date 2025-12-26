@@ -409,6 +409,7 @@ class TestDuplicateWorkDetector:
     def test_estimate_impact_score(self, detector):
         """Test impact score estimation."""
         from src.models.schemas import EvidenceItem, TemporalOverlap
+        from src.detection.clustering import MessageCluster
 
         now = datetime.utcnow()
         teams = ["platform-team", "auth-team"]
@@ -438,11 +439,26 @@ class TestDuplicateWorkDetector:
             overlap_ratio=0.8,
         )
 
-        impact_score = detector._estimate_impact_score(
-            teams, evidence, temporal_overlap, verification
+        # Create mock cluster
+        cluster = MessageCluster(
+            cluster_id="test_cluster",
+            message_ids=[1, 2, 3, 4, 5],
+            size=5,
+            avg_similarity=0.9,
+            timespan_days=7.0,
+            participant_count=8,
+        )
+
+        impact_score, impact_breakdown = detector._estimate_impact_score(
+            teams=teams,
+            evidence=evidence,
+            temporal_overlap=temporal_overlap,
+            llm_verification=verification,
+            cluster=cluster,
         )
 
         assert 0.0 <= impact_score <= 1.0
+        assert impact_breakdown is not None
 
     def test_determine_impact_tier(self, detector):
         """Test impact tier determination."""
@@ -454,6 +470,7 @@ class TestDuplicateWorkDetector:
     def test_estimate_cost(self, detector):
         """Test cost estimation."""
         from src.models.schemas import EvidenceItem, TemporalOverlap
+        from src.detection.clustering import MessageCluster
 
         now = datetime.utcnow()
         teams = ["platform-team", "auth-team"]
@@ -474,7 +491,17 @@ class TestDuplicateWorkDetector:
             overlap_days=7,
         )
 
-        cost = detector._estimate_cost(teams, evidence, temporal_overlap)
+        # Create mock cluster
+        cluster = MessageCluster(
+            cluster_id="test_cluster",
+            message_ids=[1, 2, 3, 4, 5],
+            size=5,
+            avg_similarity=0.9,
+            timespan_days=7.0,
+            participant_count=6,
+        )
+
+        cost = detector._estimate_cost(teams, evidence, temporal_overlap, cluster)
 
         assert cost.engineering_hours > 0
         assert cost.dollar_value > 0
