@@ -21,6 +21,8 @@ import numpy as np
 
 from src.analysis.entity_extraction import EntityExtractor
 from src.detection.clustering import MessageCluster, SemanticClusterer
+from src.detection.cost_estimation import CostEstimator
+from src.detection.impact_scoring import ImpactScorer
 from src.detection.patterns import (
     GapDetectionConfig,
     GapType,
@@ -39,6 +41,7 @@ from src.models.schemas import (
     CoordinationGap,
     CostEstimate,
     EvidenceItem,
+    ImpactBreakdown,
     LLMVerification,
     TemporalOverlap,
 )
@@ -61,6 +64,8 @@ class DuplicateWorkDetector(PatternDetector):
         semantic_clusterer: Optional[SemanticClusterer] = None,
         llm_client: Optional[ClaudeClient] = None,
         validator: Optional[DuplicateWorkValidator] = None,
+        impact_scorer: Optional[ImpactScorer] = None,
+        cost_estimator: Optional[CostEstimator] = None,
     ):
         """
         Initialize duplicate work detector.
@@ -71,6 +76,8 @@ class DuplicateWorkDetector(PatternDetector):
             semantic_clusterer: Semantic clusterer instance
             llm_client: Claude API client
             validator: Gap validator instance
+            impact_scorer: Impact scorer instance
+            cost_estimator: Cost estimator instance
         """
         super().__init__(config)
 
@@ -86,6 +93,8 @@ class DuplicateWorkDetector(PatternDetector):
             min_teams=self.config.min_teams,
             min_temporal_overlap_days=self.config.min_temporal_overlap_days,
         )
+        self.impact_scorer = impact_scorer or ImpactScorer()
+        self.cost_estimator = cost_estimator or CostEstimator()
 
         logger.info(
             f"DuplicateWorkDetector initialized with similarity_threshold="
@@ -565,9 +574,14 @@ class DuplicateWorkDetector(PatternDetector):
             0.7 * llm_verification.confidence + 0.3 * cluster.avg_similarity
         )
 
-        # Estimate impact score (simplified for now, will be enhanced in Milestone 3E)
-        impact_score = self._estimate_impact_score(
-            teams, evidence, temporal_overlap, llm_verification
+        # Estimate impact score with multi-signal approach (Milestone 3E)
+        impact_score, impact_breakdown = self._estimate_impact_score(
+            teams=teams,
+            evidence=evidence,
+            temporal_overlap=temporal_overlap,
+            llm_verification=llm_verification,
+            cluster=cluster,
+            project_tags=None,  # Could be enhanced with project tag extraction
         )
 
         # Determine impact tier
@@ -583,8 +597,13 @@ class DuplicateWorkDetector(PatternDetector):
         # Use LLM recommendation
         recommendation = llm_verification.recommendation
 
-        # Estimate cost (basic estimate)
-        estimated_cost = self._estimate_cost(teams, evidence, temporal_overlap)
+        # Estimate organizational cost (not Claude API cost)
+        estimated_cost = self._estimate_cost(
+            teams=teams,
+            evidence=evidence,
+            temporal_overlap=temporal_overlap,
+            cluster=cluster,
+        )
 
         return CoordinationGap(
             id=gap_id,
@@ -598,6 +617,8 @@ class DuplicateWorkDetector(PatternDetector):
             evidence=evidence,
             temporal_overlap=temporal_overlap,
             verification=llm_verification,
+            impact_breakdown=impact_breakdown,  # Milestone 3E enhancement
+            estimated_cost=estimated_cost,
             insight=insight,
             recommendation=recommendation,
             detected_at=datetime.utcnow(),
@@ -605,7 +626,6 @@ class DuplicateWorkDetector(PatternDetector):
             people_affected=cluster.participant_count,
             timespan_days=int(cluster.timespan_days or 0),
             messages_analyzed=cluster.size,
-            estimated_cost=estimated_cost,
         )
 
     def _infer_topic_from_evidence(self, evidence: List[EvidenceItem]) -> str:
@@ -626,86 +646,96 @@ class DuplicateWorkDetector(PatternDetector):
         evidence: List[EvidenceItem],
         temporal_overlap: TemporalOverlap,
         llm_verification: LLMVerification,
-    ) -> float:
+        cluster: MessageCluster,
+        project_tags: Optional[List[str]] = None,
+    ) -> Tuple[float, ImpactBreakdown]:
         """
-        Estimate impact score (simplified version).
+        Estimate impact score using multi-signal approach.
 
-        Full implementation in Milestone 3E.
+        Uses ImpactScorer to combine:
+        - Team size (25%): How many people affected?
+        - Time investment (25%): How much time wasted?
+        - Project criticality (20%): How important is this?
+        - Velocity impact (15%): What's the opportunity cost?
+        - Duplicate effort (15%): How much actual duplication?
 
         Args:
             teams: Teams involved
             evidence: Evidence items
             temporal_overlap: Temporal overlap
             llm_verification: LLM verification
+            cluster: Message cluster
+            project_tags: Optional project tags for criticality
 
         Returns:
-            Impact score (0-1)
+            Tuple of (impact_score, impact_breakdown)
         """
-        # Simple scoring based on available signals
-        team_score = min(1.0, len(teams) / 3.0)  # Normalized by 3 teams
-        evidence_score = min(1.0, len(evidence) / 10.0)  # Normalized by 10 evidence items
-        temporal_score = min(1.0, temporal_overlap.overlap_days / 30.0)  # Normalized by 30 days
-        llm_score = llm_verification.overlap_ratio
-
-        # Weighted average
-        impact_score = (
-            0.25 * team_score +
-            0.25 * evidence_score +
-            0.25 * temporal_score +
-            0.25 * llm_score
+        # Extract commits count from evidence metadata (if available)
+        commits_found = sum(
+            1 for e in evidence
+            if e.metadata and e.metadata.get("type") == "commit"
         )
 
-        return round(impact_score, 2)
+        # Calculate impact score with breakdown
+        impact_score, breakdown = self.impact_scorer.calculate_impact_score(
+            teams=teams,
+            evidence=evidence,
+            temporal_overlap=temporal_overlap,
+            llm_verification=llm_verification,
+            participant_count=cluster.participant_count,
+            commits_found=commits_found,
+            project_tags=project_tags,
+            blocking_work_count=0,  # Could be enhanced with issue tracking integration
+        )
+
+        return impact_score, breakdown
 
     def _determine_impact_tier(self, impact_score: float) -> str:
-        """Determine impact tier from score."""
-        if impact_score >= 0.8:
-            return "CRITICAL"
-        elif impact_score >= 0.6:
-            return "HIGH"
-        elif impact_score >= 0.4:
-            return "MEDIUM"
-        else:
-            return "LOW"
+        """
+        Determine impact tier from score.
+
+        Delegates to ImpactScorer for consistent tier assignment.
+        """
+        return self.impact_scorer.determine_impact_tier(impact_score)
 
     def _estimate_cost(
         self,
         teams: List[str],
         evidence: List[EvidenceItem],
         temporal_overlap: TemporalOverlap,
+        cluster: MessageCluster,
     ) -> CostEstimate:
         """
-        Estimate organizational cost (simplified version).
+        Estimate organizational cost using CostEstimator.
 
-        Full implementation in Milestone 3E.
+        IMPORTANT: This estimates the cost of duplicate work (organizational waste),
+        NOT the cost of running the detection system or Claude API.
 
         Args:
             teams: Teams involved
             evidence: Evidence items
             temporal_overlap: Temporal overlap
+            cluster: Message cluster
 
         Returns:
             CostEstimate object
         """
-        # Simple heuristic: 1 evidence item ≈ 30 min, 1 day ≈ 4 hours per team
-        hours_from_evidence = len(evidence) * 0.5
-        hours_from_timespan = temporal_overlap.overlap_days * 4 * len(teams)
-
-        estimated_hours = hours_from_evidence + hours_from_timespan
-
-        # $100/hour loaded cost
-        dollar_value = estimated_hours * 100
-
-        explanation = (
-            f"{len(teams)} teams × ~{hours_from_timespan / len(teams):.0f} hours each "
-            f"+ coordination overhead"
+        # Extract commits count from evidence metadata (if available)
+        commits_found = sum(
+            1 for e in evidence
+            if e.metadata and e.metadata.get("type") == "commit"
         )
 
-        return CostEstimate(
-            engineering_hours=round(estimated_hours, 1),
-            dollar_value=round(dollar_value, 2),
-            explanation=explanation,
+        # Use CostEstimator to calculate organizational waste cost
+        cost_estimate = self.cost_estimator.estimate_cost(
+            teams=teams,
+            evidence=evidence,
+            temporal_overlap=temporal_overlap,
+            commits_found=commits_found,
+            participant_count=cluster.participant_count,
         )
+
+        return cost_estimate
 
     def _validate_gaps(self, gaps: List[CoordinationGap]) -> List[CoordinationGap]:
         """
