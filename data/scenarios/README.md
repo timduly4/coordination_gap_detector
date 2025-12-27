@@ -130,13 +130,13 @@ OAuth implementation with clear collaboration:
 ### Load Specific Scenario
 ```bash
 # Load individual scenario
-uv run python scripts/generate_mock_data.py --scenarios oauth_duplication --clear
+docker compose exec api python scripts/generate_mock_data.py --scenarios oauth_duplication --clear
 
 # Load multiple scenarios
-uv run python scripts/generate_mock_data.py --scenarios oauth_duplication api_redesign_duplication
+docker compose exec api python scripts/generate_mock_data.py --scenarios oauth_duplication api_redesign_duplication
 
 # Load all gap detection scenarios
-uv run python scripts/generate_mock_data.py --scenarios oauth_duplication api_redesign_duplication auth_migration_duplication similar_topics_different_scope sequential_work intentional_collaboration
+docker compose exec api python scripts/generate_mock_data.py --scenarios oauth_duplication api_redesign_duplication auth_migration_duplication similar_topics_different_scope sequential_work intentional_collaboration
 ```
 
 ### Run Detection
@@ -188,10 +188,10 @@ curl -X POST http://localhost:8000/api/v1/gaps/detect \
 Run integration tests with scenarios:
 ```bash
 # Test detection with all scenarios
-pytest tests/test_integration/test_duplicate_detection_scenarios.py -v
+docker compose exec api pytest tests/test_integration/test_duplicate_detection_scenarios.py -v
 
 # Test specific scenario
-pytest tests/test_integration/test_duplicate_detection_scenarios.py::test_oauth_duplication_scenario -v
+docker compose exec api pytest tests/test_integration/test_duplicate_detection_scenarios.py::test_oauth_duplication_scenario -v
 ```
 
 ## Metrics
