@@ -144,12 +144,13 @@ def create_app() -> FastAPI:
         }
 
     # Include API routers
-    from src.api.routes import search, evaluation
+    from src.api.routes import evaluation, gaps, search
+
     app.include_router(search.router, prefix="/api/v1/search", tags=["search"])
     app.include_router(evaluation.router, prefix="/api/v1/evaluation", tags=["evaluation"])
+    app.include_router(gaps.router, prefix="/api/v1/gaps", tags=["gaps"])
 
     # TODO: Add additional routers as they are implemented
-    # app.include_router(gaps.router, prefix="/api/v1/gaps", tags=["gaps"])
     # app.include_router(insights.router, prefix="/api/v1/insights", tags=["insights"])
     # app.include_router(metrics.router, prefix="/api/v1/metrics", tags=["metrics"])
 
