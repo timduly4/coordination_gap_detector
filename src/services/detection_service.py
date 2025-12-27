@@ -11,6 +11,7 @@ import time
 from datetime import datetime, timedelta
 from typing import Any, Dict, List, Optional
 
+from sqlalchemy import select
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from src.db.models import Message
@@ -194,8 +195,8 @@ class GapDetectionService:
         end_date = datetime.utcnow()
         start_date = end_date - timedelta(days=request.timeframe_days)
 
-        # Build query
-        query = self.db_session.query(Message).filter(
+        # Build query using SQLAlchemy 2.0 select() syntax
+        stmt = select(Message).filter(
             Message.timestamp >= start_date,
             Message.timestamp <= end_date,
         )
@@ -208,10 +209,10 @@ class GapDetectionService:
 
         # Apply channel filter
         if request.channels:
-            query = query.filter(Message.channel.in_(request.channels))
+            stmt = stmt.filter(Message.channel.in_(request.channels))
 
         # Execute query
-        result = await self.db_session.execute(query)
+        result = await self.db_session.execute(stmt)
         messages = result.scalars().all()
 
         return list(messages)
