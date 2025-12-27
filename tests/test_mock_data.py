@@ -77,14 +77,28 @@ class TestMockSlackClient:
         """Test that client initializes with all scenarios."""
         client = MockSlackClient()
 
-        expected_scenarios = [
+        # Original scenarios
+        original_scenarios = [
             "oauth_discussion",
             "decision_making",
             "bug_report",
             "feature_planning",
         ]
 
-        assert set(client.scenarios.keys()) == set(expected_scenarios)
+        # Gap detection scenarios (added in Milestone 3G)
+        gap_detection_scenarios = [
+            "oauth_duplication",
+            "api_redesign_duplication",
+            "auth_migration_duplication",
+            "similar_topics_different_scope",
+            "sequential_work",
+            "intentional_collaboration",
+        ]
+
+        all_scenarios = original_scenarios + gap_detection_scenarios
+
+        assert set(client.scenarios.keys()) == set(all_scenarios)
+        assert len(client.scenarios) == 10  # 4 original + 6 gap detection
 
     def test_get_all_messages(self):
         """Test getting all messages from all scenarios."""
@@ -95,8 +109,12 @@ class TestMockSlackClient:
         assert all(isinstance(msg, MockMessage) for msg in messages)
 
         # Should have messages from all scenarios
-        # OAuth: 8, Decision: 5, Bug: 5, Feature: 6 = 24 total
-        assert len(messages) == 24
+        # Original: OAuth: 8, Decision: 5, Bug: 5, Feature: 6 = 24 total
+        # Gap detection: oauth_dup: 24, api_redesign: 18, auth_mig: 10,
+        #                different_scope: 4, sequential: 4, collab: 6 = 66 total
+        # Grand total: 24 + 66 = 90 messages (approximately, may vary by 1-2)
+        assert len(messages) >= 90
+        assert len(messages) <= 95  # Allow some variance
 
     def test_get_scenario_messages(self):
         """Test getting messages from specific scenarios."""
@@ -133,14 +151,26 @@ class TestMockSlackClient:
         client = MockSlackClient()
         descriptions = client.get_scenario_descriptions()
 
-        assert len(descriptions) == 4
+        # Should have 10 scenarios total (4 original + 6 gap detection)
+        assert len(descriptions) == 10
+
+        # Original scenarios
         assert "oauth_discussion" in descriptions
         assert "decision_making" in descriptions
         assert "bug_report" in descriptions
         assert "feature_planning" in descriptions
 
+        # Gap detection scenarios
+        assert "oauth_duplication" in descriptions
+        assert "api_redesign_duplication" in descriptions
+        assert "auth_migration_duplication" in descriptions
+        assert "similar_topics_different_scope" in descriptions
+        assert "sequential_work" in descriptions
+        assert "intentional_collaboration" in descriptions
+
         # Check that descriptions are meaningful
         assert len(descriptions["oauth_discussion"]) > 10
+        assert len(descriptions["oauth_duplication"]) > 10
 
 
 class TestOAuthScenario:

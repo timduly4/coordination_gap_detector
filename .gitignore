@@ -89,6 +89,7 @@ data/
 *.jsonl
 !**/fixtures/*.json
 !**/test_data/*.json
+!data/scenarios/README.md
 
 # Vector stores and indices
 chroma/
