@@ -493,10 +493,10 @@ class GapDetectionRequest(BaseModel):
         default=30, description="Timeframe to analyze (days)", ge=1, le=365
     )
     sources: List[str] = Field(
-        default=["slack"], description="Source types to analyze"
+        default=["slack"], description="Source types to analyze", min_length=1
     )
     gap_types: List[str] = Field(
-        default=["duplicate_work"], description="Types of gaps to detect"
+        default=["duplicate_work"], description="Types of gaps to detect", min_length=1
     )
     teams: Optional[List[str]] = Field(None, description="Filter by specific teams")
     min_impact_score: float = Field(
