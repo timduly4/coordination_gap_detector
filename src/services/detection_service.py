@@ -23,6 +23,8 @@ from src.models.schemas import (
     GapDetectionMetadata,
     GapDetectionRequest,
     GapDetectionResponse,
+    GapListRequest,
+    GapListResponse,
 )
 
 logger = logging.getLogger(__name__)
@@ -308,33 +310,28 @@ class GapDetectionService:
 
     async def list_gaps(
         self,
-        gap_type: Optional[str] = None,
-        min_impact_score: float = 0.0,
-        teams: Optional[List[str]] = None,
-        start_date: Optional[datetime] = None,
-        end_date: Optional[datetime] = None,
-        page: int = 1,
-        limit: int = 10,
-    ) -> tuple[List[CoordinationGap], int]:
+        request: GapListRequest,
+    ) -> GapListResponse:
         """
         List gaps with filtering and pagination.
 
         Args:
-            gap_type: Filter by gap type
-            min_impact_score: Minimum impact score
-            teams: Filter by teams
-            start_date: Filter from date
-            end_date: Filter to date
-            page: Page number
-            limit: Results per page
+            request: Gap list request with filters and pagination
 
         Returns:
-            Tuple of (list of gaps, total count)
+            GapListResponse with gaps and pagination info
         """
         # In real implementation, would query from database
-        # For now, this is a placeholder
+        # For now, return empty list as a placeholder
         logger.warning("list_gaps not implemented")
-        return [], 0
+
+        return GapListResponse(
+            gaps=[],
+            total=0,
+            page=request.page,
+            limit=request.limit,
+            has_more=False,
+        )
 
     def configure_detector(
         self, gap_type: str, config: GapDetectionConfig

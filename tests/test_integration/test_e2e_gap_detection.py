@@ -42,7 +42,6 @@ class TestEndToEndGapDetection:
 
         # Create mock source
         source = Source(
-            id="slack_test",
             type="slack",
             name="Test Slack Workspace",
             config={}
@@ -59,7 +58,7 @@ class TestEndToEndGapDetection:
                 author=mock_msg.author,
                 channel=mock_msg.channel,
                 timestamp=mock_msg.timestamp,
-                metadata=mock_msg.metadata or {},
+                message_metadata=mock_msg.metadata or {},
                 thread_id=mock_msg.thread_id,
             )
             async_db_session.add(db_msg)
@@ -138,7 +137,6 @@ class TestEndToEndGapDetection:
 
         # Create mock source
         source = Source(
-            id="slack_multi_test",
             type="slack",
             name="Test Slack Workspace",
             config={}
@@ -158,7 +156,7 @@ class TestEndToEndGapDetection:
                     author=mock_msg.author,
                     channel=mock_msg.channel,
                     timestamp=mock_msg.timestamp,
-                    metadata=mock_msg.metadata or {},
+                    message_metadata=mock_msg.metadata or {},
                     thread_id=mock_msg.thread_id,
                 )
                 async_db_session.add(db_msg)
@@ -233,7 +231,6 @@ class TestEndToEndGapDetection:
 
         # Create mock source
         source = Source(
-            id="slack_edge_test",
             type="slack",
             name="Test Slack Workspace",
             config={}
@@ -253,7 +250,7 @@ class TestEndToEndGapDetection:
                     author=mock_msg.author,
                     channel=mock_msg.channel,
                     timestamp=mock_msg.timestamp,
-                    metadata=mock_msg.metadata or {},
+                    message_metadata=mock_msg.metadata or {},
                     thread_id=mock_msg.thread_id,
                 )
                 async_db_session.add(db_msg)
@@ -369,7 +366,6 @@ class TestEndToEndGapDetection:
 
         # Create mock source
         source = Source(
-            id="slack_perf_test",
             type="slack",
             name="Test Slack Workspace",
             config={}
@@ -386,7 +382,7 @@ class TestEndToEndGapDetection:
                 author=mock_msg.author,
                 channel=mock_msg.channel,
                 timestamp=mock_msg.timestamp,
-                metadata=mock_msg.metadata or {},
+                message_metadata=mock_msg.metadata or {},
                 thread_id=mock_msg.thread_id,
             )
             async_db_session.add(db_msg)
