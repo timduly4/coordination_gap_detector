@@ -243,7 +243,7 @@ uv run pytest tests/test_integration/test_elasticsearch_integration.py -v
 # - Search relevance ordering
 ```
 
-For comprehensive testing documentation including test structure, options, and troubleshooting, see **[TESTING.md](./TESTING.md)**.
+For comprehensive testing documentation including test structure, options, and troubleshooting, see **[TESTING.md](./docs/TESTING.md)**.
 
 ### Code Quality
 
