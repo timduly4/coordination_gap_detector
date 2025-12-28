@@ -308,7 +308,7 @@ You're ready for Milestone 3 when you can answer these:
 2. ✅ **Complete Hour 2**: Run and understand tests
 3. ✅ **Complete Hour 3**: Run experiments and build intuition
 4. ✅ **Answer all checklist questions**
-5. ✅ **Read `MILESTONE_3_BREAKDOWN.md`**
+5. ✅ **Read `docs/milestones/MILESTONE_3_BREAKDOWN.md`**
 6. ✅ **Start Milestone 3 PR 3A**: Entity Extraction
 
 ## 💡 Pro Tips

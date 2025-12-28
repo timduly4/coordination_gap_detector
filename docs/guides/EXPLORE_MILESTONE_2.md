@@ -769,7 +769,7 @@ git log --oneline --all | grep -i milestone
 1. ✅ Complete at least Level 1 & 2 (run system + understand code)
 2. ✅ Try Level 3 experiments (tests + parameters)
 3. ✅ Answer knowledge check questions
-4. ✅ Read MILESTONE_3_BREAKDOWN.md
+4. ✅ Read docs/milestones/MILESTONE_3_BREAKDOWN.md
 5. ✅ Start Milestone 3 PR 3A (Entity Extraction)
 
 Good luck! 🚀
