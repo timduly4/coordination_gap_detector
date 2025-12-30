@@ -86,7 +86,7 @@ docker compose exec api python scripts/generate_mock_data.py \
   --clear
 
 # Verify data loaded
-docker compose exec postgres psql -U user -d coordination \
+docker compose exec postgres psql -U coordination_user -d coordination \
   -c "SELECT COUNT(*) FROM messages;"
 
 # Expected: 20+ messages
@@ -104,7 +104,7 @@ docker compose exec postgres psql -U user -d coordination \
 
 ```bash
 # Search for OAuth-related discussions
-curl -X POST http://localhost:8000/api/v1/search \
+curl -X POST http://localhost:8000/api/v1/search/ \
   -H "Content-Type: application/json" \
   -d '{
     "query": "OAuth implementation",
@@ -140,19 +140,38 @@ curl -X POST http://localhost:8000/api/v1/search \
 
 ```bash
 # Search across Slack channels
-curl -X POST http://localhost:8000/api/v1/search \
+curl -X POST http://localhost:8000/api/v1/search/ \
   -H "Content-Type: application/json" \
   -d '{
-    "query": "authentication decisions",
+    "query": "OAuth implementation",
     "sources": ["slack"],
-    "limit": 5
+    "limit": 10
   }' | jq '.results[] | {channel: .channel, author: .author, score: .score}'
 ```
 
+**Expected Output**:
+```json
+{
+  "channel": "#platform",
+  "author": "alice@company.com",
+  "score": 0.30
+}
+{
+  "channel": "#auth-team",
+  "author": "diana@company.com",
+  "score": 0.28
+}
+{
+  "channel": "#platform",
+  "author": "alice@company.com",
+  "score": 0.21
+}
+```
+
 **Key Points to Highlight**:
-- ✅ Multi-channel search (platform, auth, engineering channels)
-- ✅ Author attribution
-- ✅ Source filtering
+- ✅ Multi-channel search (results from both #platform and #auth-team channels)
+- ✅ Author attribution across different teams
+- ✅ Source filtering (only Slack results)
 
 ### Demo 1.3: ChromaDB Vector Store
 
