@@ -145,8 +145,8 @@ curl -X POST http://localhost:8000/api/v1/search/ \
   -d '{
     "query": "OAuth implementation",
     "sources": ["slack"],
-    "limit": 10
-  }' | jq '.results[] | {channel: .channel, author: .author, score: .score}'
+    "limit": 5
+  }' | jq '.results[] | {source: .source, channel: .channel, author: .author, score: .score}'
 ```
 
 **Expected Output**:
@@ -218,7 +218,7 @@ def search(self, query: str, limit: int = 10):
 
 ```bash
 # Search using BM25 (keyword matching)
-curl -X POST http://localhost:8000/api/v1/search \
+curl -X POST http://localhost:8000/api/v1/search/ \
   -H "Content-Type: application/json" \
   -d '{
     "query": "OAuth implementation authorization code",
@@ -262,7 +262,7 @@ Where:
 
 ```bash
 # Search using hybrid RRF (Reciprocal Rank Fusion)
-curl -X POST http://localhost:8000/api/v1/search \
+curl -X POST http://localhost:8000/api/v1/search/ \
   -H "Content-Type: application/json" \
   -d '{
     "query": "OAuth security best practices",
