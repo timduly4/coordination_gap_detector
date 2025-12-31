@@ -2,6 +2,16 @@
 
 This directory contains all project documentation organized by category.
 
+## 🚀 Start Here
+
+**New to the project?**
+
+👉 **[DEMO.md](./DEMO.md)** - **Interactive Demo Guide** (15 minutes)
+- Hands-on walkthrough from setup to gap detection
+- Try semantic search, BM25, and hybrid ranking
+- See the system in action with realistic mock data
+- Perfect for first-time users and demos
+
 ## 📚 Core Documentation
 
 ### API & Usage
@@ -43,6 +53,7 @@ Exploration and readiness guides:
 ```
 docs/
 ├── README.md                          ← This file
+├── DEMO.md                            ← ⭐ Interactive demo (START HERE!)
 ├── API.md                             ← API overview
 ├── API_EXAMPLES.md                    ← API usage examples
 ├── ENTITY_EXTRACTION.md               ← Entity extraction guide
@@ -62,12 +73,17 @@ docs/
 │
 └── guides/                            ← Exploration guides
     ├── EXPLORE_MILESTONE_2.md
+    ├── MILESTONE_DEMO_GUIDE.md
+    ├── PROJECT_SHOWCASE_GUIDE.md
     └── READY_FOR_MILESTONE_3.md
 ```
 
 ## 🔍 Finding What You Need
 
 ### I want to...
+
+**Try the system hands-on** ⭐
+→ See [DEMO.md](./DEMO.md) - Interactive 15-minute walkthrough
 
 **Get started quickly**
 → See [QUICKSTART.md](./QUICKSTART.md)
@@ -86,6 +102,9 @@ docs/
 
 **Understand the milestones**
 → See [milestones/MILESTONES.md](./milestones/MILESTONES.md)
+
+**Demo the project to others**
+→ See [DEMO.md](./DEMO.md) and [guides/PROJECT_SHOWCASE_GUIDE.md](./guides/PROJECT_SHOWCASE_GUIDE.md)
 
 **Know if I'm ready for Milestone 3**
 → See [guides/READY_FOR_MILESTONE_3.md](./guides/READY_FOR_MILESTONE_3.md)

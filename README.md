@@ -21,6 +21,19 @@ An enterprise platform that ingests data from multiple collaboration tools to au
 - **Search Quality** - Advanced IR with MRR, NDCG evaluation metrics
 - **Distributed Architecture** - Kubernetes, Kafka, Elasticsearch for scale
 
+## 🚀 Interactive Demo
+
+**New to the project? Start here!**
+
+Follow our [**Interactive Demo Guide**](./docs/DEMO.md) for a hands-on walkthrough:
+- ⏱️ 15 minutes from zero to detecting your first coordination gap
+- 🔍 Try semantic search, BM25, and hybrid ranking
+- 🎯 See gap detection in action with realistic mock data
+- 📊 Understand impact scoring and cost estimation
+- 💡 Learn how the detection pipeline works
+
+Perfect for first-time users, demos, and understanding the system's capabilities.
+
 ## Tech Stack
 
 - **Python 3.11+** with FastAPI
