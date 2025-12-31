@@ -87,7 +87,7 @@ jobs:
 
       - name: Start services
         run: |
-          docker compose up -d postgres redis elasticsearch chroma
+          docker compose up -d postgres redis elasticsearch chromadb
           echo "Waiting for services to be healthy..."
           sleep 10
 
