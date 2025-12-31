@@ -364,56 +364,54 @@ Best: hybrid_rrf (+8.8% MRR improvement vs semantic)
 - ✅ Quantifiable improvements (+8.8% MRR)
 - ✅ Graded relevance (not just binary relevant/not-relevant)
 
-### Demo 2.4: Feature Engineering
+### Demo 2.4: Ranking Details
 
-**Goal**: Show the 40+ ranking features extracted for each result.
+**Goal**: Show the ranking metadata returned with each search result.
 
 ```bash
-# Search with feature details
-curl -X POST http://localhost:8000/api/v1/search \
+# Search with ranking details
+curl -X POST http://localhost:8000/api/v1/search/ \
   -H "Content-Type: application/json" \
   -d '{
     "query": "OAuth implementation",
     "ranking_strategy": "hybrid_rrf",
-    "include_features": true,
     "limit": 3
-  }' | jq '.results[0].features'
+  }' | jq '.results[0].ranking_details'
 ```
 
 **Expected Output**:
 ```json
 {
-  "semantic_score": 0.92,
-  "bm25_score": 11.5,
-  "exact_match": 0.0,
-  "term_coverage": 0.75,
-  "recency": 0.85,
-  "thread_depth": 0.60,
-  "participant_count": 0.40,
-  "author_seniority": 0.70,
-  "channel_importance": 0.80
+  "semantic_rank": null,
+  "keyword_rank": 1,
+  "semantic_score": null,
+  "keyword_score": 2.095713,
+  "fusion_method": "rrf",
+  "rrf_k": 60
 }
 ```
 
-**Feature Categories**:
+**Ranking Details Fields**:
 
-1. **Query-Document Similarity** (6 features)
-   - semantic_score, bm25_score, exact_match, term_coverage
+1. **semantic_rank** / **keyword_rank**: Position in semantic and keyword result sets before fusion
+2. **semantic_score** / **keyword_score**: Raw scores from ChromaDB and Elasticsearch
+3. **fusion_method**: Strategy used to combine results (e.g., "rrf", "weighted")
+4. **rrf_k**: RRF constant used in reciprocal rank fusion (k=60)
 
-2. **Temporal Features** (5 features)
-   - recency, activity_burst, temporal_relevance
+**What This Shows**:
 
-3. **Engagement Features** (6 features)
-   - thread_depth, participant_count, reaction_count
+The `ranking_details` field provides transparency into how the final ranking was computed:
+- Which retrieval method contributed this result (semantic, keyword, or both)
+- The raw scores before fusion
+- The fusion strategy applied
 
-4. **Source Authority** (4 features)
-   - author_seniority, channel_importance, team_influence
+**Note**: The system uses 40+ internal ranking features (query-document similarity, temporal signals, engagement metrics, source authority) during the ranking process, but these are used internally by the ranking model and not exposed in the API response. The ranking_details shows the high-level fusion metadata.
 
 **Key Points to Highlight**:
-- ✅ Multi-signal ranking (not just semantic similarity)
-- ✅ Normalized to [0, 1] range for combining
-- ✅ Extensible architecture (easy to add new features)
-- ✅ Foundation for learning-to-rank (future work)
+- ✅ Transparent ranking (shows how score was computed)
+- ✅ Hybrid fusion (combines semantic and keyword signals)
+- ✅ RRF strategy (no score normalization needed)
+- ✅ Extensible for future ranking strategies
 
 ---
 
@@ -816,7 +814,7 @@ echo "✅ System ready for demo"
 ```bash
 # 1.1: Semantic search
 echo "=== Searching for 'OAuth implementation' ==="
-curl -X POST http://localhost:8000/api/v1/search \
+curl -X POST http://localhost:8000/api/v1/search/ \
   -H "Content-Type: application/json" \
   -d '{
     "query": "OAuth implementation",
@@ -836,7 +834,7 @@ curl -X POST http://localhost:8000/api/v1/search \
 ```bash
 # 2.1: Compare search strategies
 echo "=== BM25 Keyword Search ==="
-curl -X POST http://localhost:8000/api/v1/search \
+curl -X POST http://localhost:8000/api/v1/search/ \
   -H "Content-Type: application/json" \
   -d '{
     "query": "OAuth authorization code",
@@ -846,7 +844,7 @@ curl -X POST http://localhost:8000/api/v1/search \
 
 echo ""
 echo "=== Hybrid Search (Semantic + BM25) ==="
-curl -X POST http://localhost:8000/api/v1/search \
+curl -X POST http://localhost:8000/api/v1/search/ \
   -H "Content-Type: application/json" \
   -d '{
     "query": "OAuth authorization code",
@@ -856,7 +854,7 @@ curl -X POST http://localhost:8000/api/v1/search \
     content: .content[:50],
     score: .score,
     semantic_rank: .ranking_details.semantic_rank,
-    bm25_rank: .ranking_details.bm25_rank
+    keyword_rank: .ranking_details.keyword_rank
   }'
 ```
 
