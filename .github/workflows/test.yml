@@ -1,0 +1,146 @@
+name: Run Tests
+
+on:
+  pull_request:
+    branches:
+      - main
+  push:
+    branches:
+      - main
+
+jobs:
+  test:
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Free up disk space
+        run: |
+          echo "Available disk space before cleanup:"
+          df -h
+
+          # Remove unnecessary tools and files to free up space
+          sudo rm -rf /usr/share/dotnet
+          sudo rm -rf /usr/local/lib/android
+          sudo rm -rf /opt/ghc
+          sudo rm -rf /opt/hostedtoolcache/CodeQL
+
+          # Docker cleanup
+          docker system prune -af --volumes
+
+          echo "Available disk space after cleanup:"
+          df -h
+
+      - name: Set up Docker Buildx
+        uses: docker/setup-buildx-action@v3
+        with:
+          driver-opts: |
+            image=moby/buildkit:latest
+            network=host
+
+      - name: Create .env file
+        run: |
+          cat > .env << 'EOF'
+          # Database
+          POSTGRES_USER=coordination_user
+          POSTGRES_PASSWORD=coordination_pass
+          POSTGRES_DB=coordination
+          POSTGRES_HOST=postgres
+          POSTGRES_PORT=5432
+
+          # Redis
+          REDIS_HOST=redis
+          REDIS_PORT=6379
+
+          # Elasticsearch
+          ELASTICSEARCH_HOST=elasticsearch
+          ELASTICSEARCH_PORT=9200
+
+          # ChromaDB
+          CHROMA_HOST=chroma
+          CHROMA_PORT=8000
+
+          # API
+          API_HOST=0.0.0.0
+          API_PORT=8000
+          ENVIRONMENT=test
+          LOG_LEVEL=INFO
+
+          # Feature flags for testing (no external API keys required)
+          ENABLE_REALTIME_DETECTION=false
+          ANTHROPIC_API_KEY=test-key-for-ci
+          EOF
+
+      - name: Build Docker images with cache
+        run: |
+          echo "Building API service with BuildKit cache..."
+          DOCKER_BUILDKIT=1 COMPOSE_DOCKER_CLI_BUILD=1 \
+            docker compose build \
+            --build-arg BUILDKIT_INLINE_CACHE=1 \
+            api
+
+          echo "Disk space after build:"
+          df -h
+
+      - name: Start services
+        run: |
+          docker compose up -d postgres redis elasticsearch chromadb
+          echo "Waiting for services to be healthy..."
+          sleep 10
+
+      - name: Check service health
+        run: |
+          echo "Checking PostgreSQL..."
+          docker compose exec -T postgres pg_isready -U coordination_user || exit 1
+
+          echo "Checking Redis..."
+          docker compose exec -T redis redis-cli ping || exit 1
+
+          echo "Checking Elasticsearch..."
+          for i in {1..30}; do
+            if curl -s http://localhost:9200/_cluster/health | grep -q '"status":"green\|yellow"'; then
+              echo "Elasticsearch is ready"
+              break
+            fi
+            echo "Waiting for Elasticsearch... ($i/30)"
+            sleep 2
+          done
+
+          echo "All services healthy!"
+
+      - name: Start API service
+        run: |
+          docker compose up -d api
+          echo "Waiting for API to start..."
+          sleep 5
+
+      - name: Run database migrations
+        run: docker compose exec -T api alembic upgrade head
+
+      - name: Run unit tests
+        run: |
+          echo "Running test suite..."
+          docker compose exec -T api pytest \
+            --verbose \
+            --tb=short \
+            --color=yes \
+            -v
+
+      - name: View logs on failure
+        if: failure()
+        run: |
+          echo "=== API Logs ==="
+          docker compose logs api --tail=100
+          echo ""
+          echo "=== PostgreSQL Logs ==="
+          docker compose logs postgres --tail=50
+          echo ""
+          echo "=== Redis Logs ==="
+          docker compose logs redis --tail=50
+
+      - name: Cleanup
+        if: always()
+        run: docker compose down -v
