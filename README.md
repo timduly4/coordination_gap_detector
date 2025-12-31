@@ -1573,6 +1573,36 @@ Contributions are welcome! Please follow these guidelines:
 - Update documentation as needed
 - Ensure all tests pass before submitting PR
 
+### Continuous Integration
+
+This project uses GitHub Actions to automatically run tests on every pull request.
+
+**Automated Testing:**
+- All tests run automatically when you open or update a PR
+- PRs are blocked from merging if tests fail
+- Check the "Actions" tab to see test results
+- View detailed logs if tests fail
+
+**Branch Protection:**
+The `main` branch is protected and requires:
+- All tests to pass before merging
+- Pull request reviews (recommended for teams)
+- Up-to-date branches
+
+See [.github/BRANCH_PROTECTION.md](.github/BRANCH_PROTECTION.md) for setup instructions.
+
+**Before Pushing:**
+```bash
+# Run tests locally first
+docker compose exec api pytest
+
+# Run specific tests
+docker compose exec api pytest tests/test_detection/ -v
+
+# With coverage
+docker compose exec api pytest --cov=src
+```
+
 ## License
 
 This project is licensed under the MIT License - see the LICENSE file for details.
