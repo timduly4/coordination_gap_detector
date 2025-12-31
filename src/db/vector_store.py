@@ -267,6 +267,46 @@ class VectorStore:
             logger.error(f"Failed to search vector store: {e}")
             raise
 
+    def get_embeddings_by_message_ids(
+        self, message_ids: List[int]
+    ) -> Dict[int, List[float]]:
+        """
+        Retrieve embeddings for multiple messages by their message IDs.
+
+        Args:
+            message_ids: List of database message IDs
+
+        Returns:
+            Dictionary mapping message_id -> embedding vector
+        """
+        if not message_ids:
+            return {}
+
+        try:
+            # Build ChromaDB IDs from message IDs
+            embedding_ids = [f"msg_{msg_id}" for msg_id in message_ids]
+
+            # Retrieve from ChromaDB
+            results = self.collection.get(
+                ids=embedding_ids,
+                include=["embeddings"],
+            )
+
+            # Build result dictionary
+            embeddings_dict = {}
+            if results and results.get("embeddings") is not None and len(results.get("embeddings", [])) > 0:
+                for i, emb_id in enumerate(results["ids"]):
+                    # Extract message_id from embedding_id (format: "msg_{id}")
+                    msg_id = int(emb_id.replace("msg_", ""))
+                    embeddings_dict[msg_id] = results["embeddings"][i]
+
+            logger.debug(f"Retrieved {len(embeddings_dict)} embeddings for {len(message_ids)} messages")
+            return embeddings_dict
+
+        except Exception as e:
+            logger.error(f"Failed to retrieve embeddings: {e}")
+            return {}
+
     def delete(self, embedding_id: str) -> bool:
         """
         Delete a document from the vector store.

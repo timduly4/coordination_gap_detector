@@ -83,9 +83,9 @@ class TestClusteringIntegration:
             embedding = embedding_generator.generate_embedding(text)
             embeddings.append(np.array(embedding, dtype=np.float32))
 
-        # Cluster with lower threshold
+        # Cluster with lower threshold and strict min_samples for testing
         clusterer = SemanticClusterer(
-            similarity_threshold=0.60, min_cluster_size=2
+            similarity_threshold=0.60, min_cluster_size=2, min_samples=2
         )
         clusters = clusterer.cluster(embeddings)
         metrics = clusterer.get_cluster_quality_metrics(embeddings, clusters)
@@ -231,9 +231,9 @@ class TestClusteringWithDatabase:
             embedding = embedding_generator.generate_embedding(msg.content)
             embeddings.append(np.array(embedding, dtype=np.float32))
 
-        # Cluster with lower threshold
+        # Cluster with lower threshold and strict min_samples for testing
         clusterer = SemanticClusterer(
-            similarity_threshold=0.60, min_cluster_size=2
+            similarity_threshold=0.60, min_cluster_size=2, min_samples=2
         )
         clusters = clusterer.cluster(embeddings)
 

@@ -53,7 +53,7 @@ class GapDetectionConfig(BaseModel):
 
     # Clustering parameters
     similarity_threshold: float = Field(
-        default=0.85,
+        default=0.70,
         description="Minimum similarity for clustering (0-1)",
         ge=0.0,
         le=1.0,

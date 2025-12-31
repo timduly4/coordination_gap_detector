@@ -136,7 +136,7 @@ class TestSemanticClusterer:
     def test_cluster_finds_clusters(self, sample_embeddings):
         """Test that clustering finds expected clusters."""
         clusterer = SemanticClusterer(
-            similarity_threshold=0.80, min_cluster_size=2
+            similarity_threshold=0.80, min_cluster_size=2, min_samples=2
         )
 
         clusters = clusterer.cluster(sample_embeddings)
@@ -151,7 +151,7 @@ class TestSemanticClusterer:
     def test_cluster_with_high_threshold(self, sample_embeddings):
         """Test clustering with very high similarity threshold."""
         clusterer = SemanticClusterer(
-            similarity_threshold=0.99, min_cluster_size=2
+            similarity_threshold=0.99, min_cluster_size=2, min_samples=2
         )
 
         clusters = clusterer.cluster(sample_embeddings)
@@ -386,7 +386,7 @@ class TestClusteringEdgeCases:
     def test_no_clusters_found(self):
         """Test when no clusters meet minimum size."""
         clusterer = SemanticClusterer(
-            similarity_threshold=0.80, min_cluster_size=10
+            similarity_threshold=0.80, min_cluster_size=10, min_samples=10
         )
         embeddings = [
             np.array([1.0, 0.0], dtype=np.float32),

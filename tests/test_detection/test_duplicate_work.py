@@ -48,7 +48,8 @@ class TestDuplicateWorkDetector:
             min_temporal_overlap_days=3,
             llm_confidence_threshold=0.7,
         )
-        return DuplicateWorkDetector(config=config)
+        # Use conservative fallback for testing (not heuristic)
+        return DuplicateWorkDetector(config=config, use_heuristic_fallback=False)
 
     @pytest.fixture
     def sample_messages(self) -> List[MockMessage]:

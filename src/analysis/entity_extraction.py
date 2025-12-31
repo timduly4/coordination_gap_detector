@@ -253,7 +253,12 @@ class EntityExtractor:
                             break
                 else:
                     # Use channel name directly as team
-                    normalized = f"{channel_clean}-team"
+                    # Avoid double "team" suffix if channel already ends with "team"
+                    if channel_clean.endswith("-team") or channel_clean.endswith("team"):
+                        normalized = channel_clean
+                    else:
+                        normalized = f"{channel_clean}-team"
+
                     if normalized not in seen:
                         teams.append(Team(
                             text=channel,
