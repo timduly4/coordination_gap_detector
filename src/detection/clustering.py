@@ -104,9 +104,11 @@ class SemanticClusterer(ClusteringStrategy):
         X = np.array(embeddings, dtype=np.float32)
 
         # Run DBSCAN
+        # Note: Using min_samples=1 to allow sparse cross-channel clusters
+        # This enables detection of duplicate work across different channels
         dbscan = DBSCAN(
             eps=self.eps,
-            min_samples=self.min_cluster_size,
+            min_samples=1,  # Allow any message to be a core point if it has neighbors
             metric=self.metric,
         )
         labels = dbscan.fit_predict(X)

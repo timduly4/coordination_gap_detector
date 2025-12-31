@@ -231,26 +231,24 @@ class GapDetectionService:
         Returns:
             List of embedding vectors
         """
-        embeddings = []
+        if not messages:
+            return []
 
+        # Get message IDs
+        message_ids = [msg.id for msg in messages]
+
+        # Retrieve embeddings from vector store by message ID
+        embeddings_dict = self.vector_store.get_embeddings_by_message_ids(message_ids)
+
+        # Build embeddings list in same order as messages
+        embeddings = []
         for msg in messages:
-            if msg.embedding_id:
-                # Get embedding from vector store
-                try:
-                    # In real implementation, would batch retrieve
-                    embedding = await self.vector_store.get_embedding(msg.embedding_id)
-                    if embedding is not None:
-                        embeddings.append(embedding)
-                    else:
-                        logger.warning(f"No embedding found for message {msg.id}")
-                        # Use zero vector as placeholder
-                        embeddings.append([0.0] * 1024)  # Assuming 1024-dim embeddings
-                except Exception as e:
-                    logger.error(f"Error retrieving embedding for message {msg.id}: {e}")
-                    embeddings.append([0.0] * 1024)
+            if msg.id in embeddings_dict:
+                embeddings.append(embeddings_dict[msg.id])
             else:
-                logger.warning(f"Message {msg.id} has no embedding_id")
-                embeddings.append([0.0] * 1024)
+                logger.warning(f"No embedding found for message {msg.id}")
+                # Use None or zero vector - detector should handle missing embeddings
+                embeddings.append(None)
 
         return embeddings
 
