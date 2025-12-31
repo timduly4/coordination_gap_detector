@@ -47,6 +47,7 @@ class SemanticClusterer(ClusteringStrategy):
         min_cluster_size: int = 2,
         time_window_days: Optional[int] = None,
         metric: str = "cosine",
+        min_samples: Optional[int] = None,
     ):
         """
         Initialize semantic clusterer.
@@ -57,11 +58,17 @@ class SemanticClusterer(ClusteringStrategy):
             min_cluster_size: Minimum messages per cluster
             time_window_days: Optional time window for temporal clustering
             metric: Distance metric ('cosine', 'euclidean')
+            min_samples: DBSCAN min_samples parameter. If None, uses min_cluster_size.
+                        Set to 1 for sparse cross-channel clustering (production).
+                        Use min_cluster_size for strict clustering (testing).
         """
         self.similarity_threshold = similarity_threshold
         self.min_cluster_size = min_cluster_size
         self.time_window_days = time_window_days
         self.metric = metric
+        # Allow explicit min_samples override, default to 1 for production use
+        # (enables cross-channel duplicate work detection)
+        self.min_samples = min_samples if min_samples is not None else 1
 
         # Convert similarity threshold to distance threshold
         # For cosine: distance = 1 - similarity
@@ -104,11 +111,12 @@ class SemanticClusterer(ClusteringStrategy):
         X = np.array(embeddings, dtype=np.float32)
 
         # Run DBSCAN
-        # Note: Using min_samples=1 to allow sparse cross-channel clusters
-        # This enables detection of duplicate work across different channels
+        # Note: min_samples controls density requirement
+        # min_samples=1 allows sparse cross-channel clusters (production)
+        # min_samples=min_cluster_size requires denser clusters (testing)
         dbscan = DBSCAN(
             eps=self.eps,
-            min_samples=1,  # Allow any message to be a core point if it has neighbors
+            min_samples=self.min_samples,
             metric=self.metric,
         )
         labels = dbscan.fit_predict(X)

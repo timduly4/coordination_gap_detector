@@ -66,6 +66,7 @@ class DuplicateWorkDetector(PatternDetector):
         validator: Optional[DuplicateWorkValidator] = None,
         impact_scorer: Optional[ImpactScorer] = None,
         cost_estimator: Optional[CostEstimator] = None,
+        use_heuristic_fallback: bool = True,
     ):
         """
         Initialize duplicate work detector.
@@ -78,6 +79,8 @@ class DuplicateWorkDetector(PatternDetector):
             validator: Gap validator instance
             impact_scorer: Impact scorer instance
             cost_estimator: Cost estimator instance
+            use_heuristic_fallback: Use heuristic when LLM fails (True for production/demo,
+                                   False for conservative testing)
         """
         super().__init__(config)
 
@@ -95,6 +98,7 @@ class DuplicateWorkDetector(PatternDetector):
         )
         self.impact_scorer = impact_scorer or ImpactScorer()
         self.cost_estimator = cost_estimator or CostEstimator()
+        self.use_heuristic_fallback = use_heuristic_fallback
 
         logger.info(
             f"DuplicateWorkDetector initialized with similarity_threshold="
@@ -433,21 +437,32 @@ class DuplicateWorkDetector(PatternDetector):
         except Exception as e:
             logger.error(f"LLM verification failed: {e}")
 
-            # Fallback: Use heuristic-based verification for demo/testing
-            # If we have multiple teams working on similar content with temporal overlap,
-            # it's likely duplicate work
-            logger.warning("Falling back to heuristic verification (LLM unavailable)")
+            if self.use_heuristic_fallback:
+                # Fallback: Use heuristic-based verification for demo/production
+                # If we have multiple teams working on similar content with temporal overlap,
+                # it's likely duplicate work
+                logger.warning("Falling back to heuristic verification (LLM unavailable)")
 
-            # Simple heuristic: if we got this far (multiple teams, temporal overlap),
-            # assume it's duplicate work with moderate confidence
-            return LLMVerification(
-                is_duplicate=True,
-                confidence=0.75,  # Moderate confidence for heuristic
-                reasoning=f"Heuristic verification: {len(teams)} teams working on similar content with {temporal_overlap.overlap_days} days overlap. LLM unavailable: {str(e)[:100]}",
-                evidence=[msg.content[:100] for msg in messages[:3]],
-                recommendation=f"Connect teams: {', '.join(teams)}. Verify if work is truly duplicated (LLM verification unavailable).",
-                overlap_ratio=0.8,
-            )
+                # Simple heuristic: if we got this far (multiple teams, temporal overlap),
+                # assume it's duplicate work with moderate confidence
+                return LLMVerification(
+                    is_duplicate=True,
+                    confidence=0.75,  # Moderate confidence for heuristic
+                    reasoning=f"Heuristic verification: {len(teams)} teams working on similar content with {temporal_overlap.overlap_days} days overlap. LLM unavailable: {str(e)[:100]}",
+                    evidence=[msg.content[:100] for msg in messages[:3]],
+                    recommendation=f"Connect teams: {', '.join(teams)}. Verify if work is truly duplicated (LLM verification unavailable).",
+                    overlap_ratio=0.8,
+                )
+            else:
+                # Return conservative default for testing
+                return LLMVerification(
+                    is_duplicate=False,
+                    confidence=0.0,
+                    reasoning=f"LLM verification error: {str(e)}",
+                    evidence=[],
+                    recommendation="Manual review required",
+                    overlap_ratio=0.0,
+                )
 
     def _infer_topic(self, messages: List[Any]) -> str:
         """
