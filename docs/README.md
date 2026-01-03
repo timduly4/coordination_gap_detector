@@ -32,9 +32,6 @@ This directory contains all project documentation organized by category.
 - **[search_components_explained.md](./search_components_explained.md)** - Search system components
 - **[three_database_architecture.md](./three_database_architecture.md)** - Database architecture overview
 
-### Showcase & Presentation
-- **[PROJECT_SHOWCASE_GUIDE.md](./PROJECT_SHOWCASE_GUIDE.md)** - How to showcase this project for interviews, demos, and presentations
-
 ## 🎯 Milestones
 
 Planning documents for each development milestone:
@@ -58,7 +55,6 @@ docs/
 ├── RANKING.md                         ← Ranking strategies
 ├── TESTING.md                         ← Testing guide
 ├── QUICKSTART.md                      ← Quick start
-├── PROJECT_SHOWCASE_GUIDE.md          ← Interview & presentation guide
 ├── search_components_explained.md     ← Search architecture
 ├── three_database_architecture.md     ← Database architecture
 │
@@ -95,7 +91,7 @@ docs/
 → See [milestones/MILESTONES.md](./milestones/MILESTONES.md)
 
 **Demo the project to others**
-→ See [DEMO.md](./DEMO.md) and [PROJECT_SHOWCASE_GUIDE.md](./PROJECT_SHOWCASE_GUIDE.md)
+→ See [DEMO.md](./DEMO.md) - Interactive 15-minute walkthrough with copy-paste commands
 
 ---
 
