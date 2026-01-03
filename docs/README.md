@@ -17,7 +17,6 @@ This directory contains all project documentation organized by category.
 ### API & Usage
 - **[API.md](./API.md)** - API overview and architecture
 - **[API_EXAMPLES.md](./API_EXAMPLES.md)** - Comprehensive API usage examples with Python and TypeScript clients
-- **[QUICKSTART.md](./QUICKSTART.md)** - Quick start guide for getting up and running
 
 ### System Capabilities
 - **[GAP_DETECTION.md](./GAP_DETECTION.md)** - Complete gap detection methodology (6-stage pipeline)
@@ -54,7 +53,6 @@ docs/
 ├── GAP_DETECTION.md                   ← Gap detection methodology
 ├── RANKING.md                         ← Ranking strategies
 ├── TESTING.md                         ← Testing guide
-├── QUICKSTART.md                      ← Quick start
 ├── search_components_explained.md     ← Search architecture
 ├── three_database_architecture.md     ← Database architecture
 │
@@ -70,10 +68,7 @@ docs/
 ### I want to...
 
 **Try the system hands-on** ⭐
-→ See [DEMO.md](./DEMO.md) - Interactive 15-minute walkthrough
-
-**Get started quickly**
-→ See [QUICKSTART.md](./QUICKSTART.md)
+→ See [DEMO.md](./DEMO.md) - Interactive 15-minute walkthrough (includes setup)
 
 **Understand the API**
 → See [API.md](./API.md) and [API_EXAMPLES.md](./API_EXAMPLES.md)
