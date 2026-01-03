@@ -80,7 +80,7 @@ docker compose exec api python scripts/generate_mock_data.py \
 ```
 
 **What this creates:**
-- 25 messages across 3 Slack channels (#platform, #auth-team, #engineering)
+- 25 messages across 3 Slack channels: 12 in #auth-team, 1 in #engineering, 12 in #platform
 - 2 teams independently implementing OAuth2
 - 14 days of conversation history
 - ~40 hours of duplicated engineering effort (simulated)
@@ -104,9 +104,9 @@ docker compose exec postgres psql -U coordination_user -d coordination \
 ```
    channel    | count
 --------------+-------
- #platform    |    10
- #auth-team   |    10
- #engineering |     5
+ #auth-team   |    12
+ #engineering |     1
+ #platform    |    12
 ```
 
 ---
