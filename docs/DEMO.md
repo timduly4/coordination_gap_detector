@@ -378,29 +378,6 @@ curl -X POST http://localhost:8000/api/v1/gaps/detect \
   }' | jq '.metadata.total_gaps'
 ```
 
-### 5.3 List All Detected Gaps
-
-```bash
-# Get paginated list of all gaps
-curl "http://localhost:8000/api/v1/gaps?limit=10" | jq '.gaps[] | {
-  id,
-  type,
-  teams_involved,
-  impact_tier,
-  detected_at
-}'
-```
-
-### 5.4 Get Specific Gap Details
-
-```bash
-# First, get a gap ID
-GAP_ID=$(curl -s "http://localhost:8000/api/v1/gaps?limit=1" | jq -r '.gaps[0].id')
-
-# Then fetch full details
-curl "http://localhost:8000/api/v1/gaps/$GAP_ID" | jq
-```
-
 ---
 
 ## Part 6: Understanding How It Works (Optional)
