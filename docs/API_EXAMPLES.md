@@ -6,9 +6,6 @@ Complete guide to using the Coordination Gap Detection API with practical exampl
 
 - [Quick Start](#quick-start)
 - [Gap Detection](#gap-detection)
-- [Listing Gaps](#listing-gaps)
-- [Retrieving Specific Gaps](#retrieving-specific-gaps)
-- [Filtering and Pagination](#filtering-and-pagination)
 - [Error Handling](#error-handling)
 - [Rate Limiting](#rate-limiting)
 - [Integration Patterns](#integration-patterns)
@@ -200,195 +197,7 @@ curl -X POST http://localhost:8000/api/v1/gaps/detect \
   }'
 ```
 
----
-
-## Listing Gaps
-
-### List All Gaps
-
-```bash
-curl http://localhost:8000/api/v1/gaps
-```
-
-**Response**:
-```json
-{
-  "gaps": [
-    {
-      "id": "gap_abc123",
-      "type": "duplicate_work",
-      "title": "Two teams building OAuth integration",
-      "impact_score": 0.89,
-      "teams_involved": ["platform-team", "auth-team"],
-      "detected_at": "2024-12-27T10:30:00Z"
-    }
-  ],
-  "total": 1,
-  "page": 1,
-  "limit": 10,
-  "has_more": false
-}
-```
-
-### List with Filters
-
-Filter gaps by type and impact:
-
-```bash
-curl "http://localhost:8000/api/v1/gaps?gap_type=duplicate_work&min_impact_score=0.7"
-```
-
-**Query Parameters**:
-- `gap_type` (string): Filter by gap type
-- `min_impact_score` (float, 0-1): Minimum impact score
-- `teams` (array): Filter by team involvement
-- `page` (int, ≥1): Page number (default: 1)
-- `limit` (int, 1-100): Results per page (default: 10)
-
-### List with Pagination
-
-```bash
-# Page 1 (first 5 results)
-curl "http://localhost:8000/api/v1/gaps?page=1&limit=5"
-
-# Page 2 (next 5 results)
-curl "http://localhost:8000/api/v1/gaps?page=2&limit=5"
-```
-
-**Response**:
-```json
-{
-  "gaps": [...],
-  "total": 23,
-  "page": 2,
-  "limit": 5,
-  "has_more": true
-}
-```
-
-### List High-Impact Gaps Only
-
-```bash
-curl "http://localhost:8000/api/v1/gaps?min_impact_score=0.8&limit=20"
-```
-
----
-
-## Retrieving Specific Gaps
-
-### Get Gap by ID
-
-```bash
-curl http://localhost:8000/api/v1/gaps/gap_abc123
-```
-
-**Response** (full gap object):
-```json
-{
-  "id": "gap_abc123",
-  "type": "duplicate_work",
-  "title": "Two teams building OAuth integration",
-  "topic": "OAuth2 integration",
-  "teams_involved": ["platform-team", "auth-team"],
-  "impact_score": 0.89,
-  "impact_tier": "HIGH",
-  "confidence": 0.87,
-  "evidence": [
-    {
-      "source": "slack",
-      "content": "Starting OAuth2 implementation...",
-      "author": "alice@company.com",
-      "timestamp": "2024-12-01T09:00:00Z",
-      "relevance_score": 0.95
-    }
-  ],
-  "temporal_overlap": {
-    "start": "2024-12-01T00:00:00Z",
-    "end": "2024-12-15T00:00:00Z",
-    "overlap_days": 14
-  },
-  "verification": {
-    "is_duplicate": true,
-    "confidence": 0.85,
-    "reasoning": "Both teams implementing OAuth2 independently",
-    "recommendation": "Connect teams immediately"
-  },
-  "insight": "Platform and Auth teams independently implementing OAuth2",
-  "recommendation": "Consolidate efforts under one team lead",
-  "estimated_cost": {
-    "engineering_hours": 85,
-    "dollar_value": 8500
-  },
-  "detected_at": "2024-12-27T10:30:00Z"
-}
-```
-
-### Gap Not Found
-
-```bash
-curl http://localhost:8000/api/v1/gaps/nonexistent_gap
-```
-
-**Response** (404):
-```json
-{
-  "detail": "Gap with ID 'nonexistent_gap' not found"
-}
-```
-
----
-
-## Filtering and Pagination
-
-### Complex Filtering
-
-Combine multiple filters:
-
-```bash
-curl -G "http://localhost:8000/api/v1/gaps" \
-  --data-urlencode "gap_type=duplicate_work" \
-  --data-urlencode "min_impact_score=0.6" \
-  --data-urlencode "teams=platform-team" \
-  --data-urlencode "teams=auth-team" \
-  --data-urlencode "limit=20"
-```
-
-### Pagination Pattern
-
-Iterate through all gaps:
-
-```bash
-#!/bin/bash
-# Fetch all gaps with pagination
-
-page=1
-limit=10
-has_more=true
-
-while [ "$has_more" = "true" ]; do
-  echo "Fetching page $page..."
-
-  response=$(curl -s "http://localhost:8000/api/v1/gaps?page=$page&limit=$limit")
-
-  # Extract has_more field
-  has_more=$(echo "$response" | jq -r '.has_more')
-
-  # Process gaps
-  echo "$response" | jq '.gaps[]'
-
-  ((page++))
-done
-```
-
-### Sort and Filter
-
-```bash
-# Get top 10 highest-impact gaps
-curl "http://localhost:8000/api/v1/gaps?min_impact_score=0.7&limit=10"
-
-# Get recent gaps for specific team
-curl "http://localhost:8000/api/v1/gaps?teams=platform-team&limit=5"
-```
+> **Note:** Gap persistence is not yet implemented. Gaps are only returned in the detection response and not stored in the database. This feature is planned for a future milestone.
 
 ---
 
@@ -573,7 +382,9 @@ class GapDetectionClient:
         self,
         timeframe_days: int = 30,
         sources: Optional[List[str]] = None,
+        gap_types: Optional[List[str]] = None,
         min_impact_score: float = 0.6,
+        teams: Optional[List[str]] = None,
         include_evidence: bool = True
     ) -> Dict:
         """Detect coordination gaps."""
@@ -582,47 +393,12 @@ class GapDetectionClient:
             json={
                 "timeframe_days": timeframe_days,
                 "sources": sources or ["slack"],
-                "gap_types": ["duplicate_work"],
+                "gap_types": gap_types or ["duplicate_work"],
                 "min_impact_score": min_impact_score,
+                "teams": teams,
                 "include_evidence": include_evidence
             },
             timeout=30
-        )
-        response.raise_for_status()
-        return response.json()
-
-    def list_gaps(
-        self,
-        gap_type: Optional[str] = None,
-        min_impact_score: float = 0.0,
-        teams: Optional[List[str]] = None,
-        page: int = 1,
-        limit: int = 10
-    ) -> Dict:
-        """List detected gaps with pagination."""
-        params = {
-            "page": page,
-            "limit": limit,
-            "min_impact_score": min_impact_score
-        }
-        if gap_type:
-            params["gap_type"] = gap_type
-        if teams:
-            params["teams"] = teams
-
-        response = self.session.get(
-            f"{self.base_url}/api/v1/gaps",
-            params=params,
-            timeout=10
-        )
-        response.raise_for_status()
-        return response.json()
-
-    def get_gap(self, gap_id: str) -> Dict:
-        """Get specific gap by ID."""
-        response = self.session.get(
-            f"{self.base_url}/api/v1/gaps/{gap_id}",
-            timeout=10
         )
         response.raise_for_status()
         return response.json()
@@ -634,15 +410,11 @@ client = GapDetectionClient()
 result = client.detect_gaps(timeframe_days=30, min_impact_score=0.7)
 print(f"Found {result['metadata']['total_gaps']} gaps")
 
-# List high-impact gaps
-gaps = client.list_gaps(min_impact_score=0.8, limit=5)
-for gap in gaps['gaps']:
+# Iterate through detected gaps
+for gap in result['gaps']:
     print(f"- {gap['title']} (impact: {gap['impact_score']})")
-
-# Get specific gap
-gap = client.get_gap("gap_abc123")
-print(f"Gap: {gap['title']}")
-print(f"Teams: {', '.join(gap['teams_involved'])}")
+    print(f"  Teams: {', '.join(gap['teams_involved'])}")
+    print(f"  Recommendation: {gap['recommendation']}")
 ```
 
 ### JavaScript/TypeScript Client
@@ -676,34 +448,6 @@ class GapDetectionClient {
     return response.json();
   }
 
-  async listGaps(params: {
-    gapType?: string;
-    minImpactScore?: number;
-    teams?: string[];
-    page?: number;
-    limit?: number;
-  }): Promise<any> {
-    const queryParams = new URLSearchParams({
-      page: String(params.page || 1),
-      limit: String(params.limit || 10),
-      min_impact_score: String(params.minImpactScore || 0.0),
-    });
-
-    if (params.gapType) queryParams.append("gap_type", params.gapType);
-    if (params.teams) {
-      params.teams.forEach(team => queryParams.append("teams", team));
-    }
-
-    const response = await fetch(
-      `${this.baseUrl}/api/v1/gaps?${queryParams}`
-    );
-
-    if (!response.ok) {
-      throw new Error(`API error: ${response.statusText}`);
-    }
-
-    return response.json();
-  }
 }
 
 // Usage
@@ -716,13 +460,11 @@ const result = await client.detectGaps({
 });
 console.log(`Found ${result.metadata.total_gaps} gaps`);
 
-// List gaps
-const gaps = await client.list_gaps({
-  minImpactScore: 0.8,
-  limit: 5,
-});
-gaps.gaps.forEach(gap => {
+// Iterate through detected gaps
+result.gaps.forEach(gap => {
   console.log(`- ${gap.title} (impact: ${gap.impact_score})`);
+  console.log(`  Teams: ${gap.teams_involved.join(", ")}`);
+  console.log(`  Recommendation: ${gap.recommendation}`);
 });
 ```
 
@@ -885,23 +627,20 @@ monitor_gaps(check_interval_seconds=3600)
 # Detect gaps
 POST /api/v1/gaps/detect
 
-# List gaps
-GET /api/v1/gaps
-
-# Get specific gap
-GET /api/v1/gaps/{gap_id}
-
 # Health check
 GET /api/v1/gaps/health
 ```
 
+> **Note:** Gap listing and retrieval endpoints (`GET /api/v1/gaps`, `GET /api/v1/gaps/{gap_id}`) are not yet implemented. Gaps are only returned in the detection response.
+
 **Best Practices**:
-1. Start with high impact threshold (0.7+)
+1. Start with high impact threshold (0.7+) to focus on important gaps
 2. Include evidence for actionable insights
-3. Use pagination for large result sets
+3. Use appropriate timeframes (7-30 days for recent gaps)
 4. Implement retry logic for transient errors
 5. Respect rate limits
-6. Monitor for high-impact gaps
+6. Monitor for high-impact gaps regularly
+7. Save detection results if you need to reference them later
 
 **Next Steps**:
 - [Gap Detection Methodology](GAP_DETECTION.md)
