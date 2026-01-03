@@ -2,6 +2,8 @@
 
 This document explains the coordination gap detection system, algorithms, and best practices for detecting and resolving organizational coordination failures.
 
+**Note:** Currently, only **duplicate work detection** is fully implemented. Other gap types (missing context, stale docs, knowledge silos) are planned for future milestones.
+
 ## Table of Contents
 
 - [Overview](#overview)
@@ -12,6 +14,7 @@ This document explains the coordination gap detection system, algorithms, and be
 - [Tuning Parameters](#tuning-parameters)
 - [Best Practices](#best-practices)
 - [Troubleshooting](#troubleshooting)
+- [Future Gap Types](#future-gap-types)
 
 ---
 
@@ -21,10 +24,10 @@ This document explains the coordination gap detection system, algorithms, and be
 
 A coordination gap occurs when organizational information flows break down, causing:
 
-- **Duplicate Work**: Teams independently solving the same problem
-- **Missing Context**: Decisions made without critical stakeholder input
-- **Stale Documentation**: Documentation contradicting current implementation
-- **Knowledge Silos**: Critical knowledge trapped within individual teams
+- **Duplicate Work**: Teams independently solving the same problem ✅ **Implemented**
+- **Missing Context**: Decisions made without critical stakeholder input (planned)
+- **Stale Documentation**: Documentation contradicting current implementation (planned)
+- **Knowledge Silos**: Critical knowledge trapped within individual teams (planned)
 
 ### How Gap Detection Works
 
@@ -45,7 +48,7 @@ The system uses a multi-stage AI pipeline combining:
 # Retrieve messages from specified timeframe
 messages = await retrieve_messages(
     timeframe_days=30,
-    sources=["slack", "github", "google_docs"],
+    sources=["slack"],
     channels=["#engineering", "#platform"]
 )
 ```
@@ -125,7 +128,7 @@ def has_temporal_overlap(cluster, teams, min_overlap_days=3):
 
 **Key Insight**: Teams working 2 months apart = knowledge sharing (good). Teams working same 2 weeks = potential duplication (investigate).
 
-### Stage 5: LLM Verification
+### Stage 5: LLM Verification (Optional)
 
 ```python
 # Use Claude to verify actual duplication
@@ -148,7 +151,7 @@ verification = await claude_client.verify_duplicate_work(
 ```
 
 **What happens**:
-- Send cluster context to Claude API
+- Send cluster context to Claude API (if enabled)
 - LLM analyzes if work is truly duplicated or intentionally coordinated
 - Returns structured verification with reasoning
 - Provides action recommendations
@@ -157,7 +160,7 @@ verification = await claude_client.verify_duplicate_work(
 - ✅ Duplication: "Starting OAuth implementation" (team A) + "Building OAuth support" (team B)
 - ❌ Collaboration: "Working with @team-b on OAuth" + "@team-a is handling auth flow"
 
-### Stage 6: Gap Creation & Storage
+### Stage 6: Gap Creation & Response
 
 ```python
 if verification.is_duplicate and verification.confidence > 0.7:
@@ -174,15 +177,17 @@ if verification.is_duplicate and verification.confidence > 0.7:
         detected_at=datetime.utcnow()
     )
 
-    # Store in PostgreSQL
-    await db.save_gap(gap)
+    # Return in API response (not persisted to DB)
+    gaps.append(gap)
 ```
 
 **What happens**:
-- Only gaps with >70% confidence are saved
+- Only gaps with >70% confidence are included
 - Evidence is collected and ranked by relevance
 - Impact is scored (0-1 scale)
-- Gap stored in database for retrieval
+- Gap returned in API response
+
+**Note**: Gaps are currently returned in the detection response only. Persistent storage is planned for a future milestone.
 
 ---
 
@@ -195,7 +200,7 @@ A cluster must meet **ALL** of these to be flagged as duplicate work:
 1. ✅ **Semantic Similarity > 0.85**: Messages discuss similar topics
 2. ✅ **Multiple Teams (≥2)**: At least 2 different teams involved
 3. ✅ **Temporal Overlap (≥3 days)**: Teams working simultaneously
-4. ✅ **LLM Verification (confidence >0.7)**: Claude confirms duplication
+4. ✅ **LLM Verification (confidence >0.7)**: Claude confirms duplication (if enabled)
 
 ### Exclusion Rules
 
@@ -223,7 +228,7 @@ Auth Team (#auth-team channel):
 Detection Result:
 ✅ Semantic Similarity: 0.92 (both discussing OAuth2 implementation)
 ✅ Multiple Teams: 2 teams (platform-team, auth-team)
-✅ Temporal Overlap: 14 days of parallel work
+✅ Temporal Overlap: 5 days of parallel work
 ✅ LLM Confidence: 0.89
 ✅ No Cross-References: Teams not aware of each other
 
@@ -448,7 +453,7 @@ LLM verification prompts can be tuned:
 - Add domain-specific context
 - Include organizational patterns
 - Refine verification questions
-- A/B test prompt variations
+- Test prompt variations
 
 ---
 
@@ -464,8 +469,9 @@ LLM verification prompts can be tuned:
 
 **Debugging**:
 ```bash
-# Check clustering output
-curl -X POST /api/v1/gaps/detect \
+# Check detection output
+curl -X POST http://localhost:8000/api/v1/gaps/detect \
+  -H "Content-Type: application/json" \
   -d '{"timeframe_days": 30, "min_impact_score": 0.0}'
 
 # Review logs for cluster statistics
@@ -519,60 +525,30 @@ docker compose logs api | grep "retry"
 
 ---
 
-## Advanced Topics
+## Future Gap Types
 
-### Multi-Gap Detection
+The following gap types are planned for future milestones:
 
-Detect multiple gap types in one pass:
+### Missing Context Detection (Planned)
 
-```python
-response = await client.post("/api/v1/gaps/detect", json={
-    "gap_types": [
-        "duplicate_work",
-        "missing_context",    # Future
-        "stale_docs",         # Future
-        "knowledge_silo"      # Future
-    ]
-})
-```
+Detect when important decisions are made without key stakeholders:
+- Identify decision points in discussions
+- Check for required stakeholder participation
+- Flag missing perspectives
 
-### Cross-Source Detection
+### Stale Documentation Detection (Planned)
 
-Combine evidence from multiple sources:
+Detect when documentation contradicts current implementation:
+- Compare docs with recent code changes
+- Detect semantic drift over time
+- Flag outdated references
 
-```python
-# Detect across Slack + GitHub + Google Docs
-{
-    "sources": ["slack", "github", "google_docs"],
-    "timeframe_days": 30
-}
+### Knowledge Silo Detection (Planned)
 
-# Result: Evidence from multiple sources
-{
-    "evidence": [
-        {"source": "slack", "content": "Starting OAuth..."},
-        {"source": "github", "pr": "#123", "title": "Add OAuth..."},
-        {"source": "google_docs", "doc": "OAuth Design Doc"}
-    ]
-}
-```
-
-### Historical Analysis
-
-Analyze past gaps to prevent future ones:
-
-```python
-# Get gaps from last 90 days
-gaps = await client.get("/api/v1/gaps", params={
-    "start_date": "2024-10-01",
-    "end_date": "2024-12-31"
-})
-
-# Analyze patterns
-- Which teams frequently duplicate?
-- What topics are commonly duplicated?
-- What's the average resolution time?
-```
+Detect when critical knowledge is trapped in one team:
+- Build knowledge graph (who knows what)
+- Identify single points of failure
+- Measure cross-team information flow
 
 ---
 
@@ -586,13 +562,17 @@ gaps = await client.get("/api/v1/gaps", params={
 4. **Evidence-Based**: Every gap includes detailed evidence and reasoning
 5. **Actionable**: Recommendations help teams resolve issues
 
+**Current Status**:
+- ✅ **Duplicate work detection**: Fully implemented
+- ⏳ **Gap persistence**: Planned for future milestone
+- ⏳ **Other gap types**: Planned for future milestones
+
 **Next Steps**:
 - [Entity Extraction Guide](ENTITY_EXTRACTION.md)
 - [API Usage Examples](API_EXAMPLES.md)
-- [Troubleshooting Guide](../README.md#troubleshooting)
+- [Demo Guide](DEMO.md)
 
 ---
 
-**Last Updated**: December 2024
-**Version**: 1.0
-**Milestone**: 3H - Testing & Documentation
+**Last Updated**: January 2025
+**Status**: Duplicate work detection implemented; gap persistence and other gap types planned for future milestones
