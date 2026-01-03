@@ -308,7 +308,7 @@ curl -s -X POST http://localhost:8000/api/v1/gaps/detect \
     author,
     timestamp,
     content: .content[:80]
-  }' | head -20
+  }'
 ```
 
 **What you're seeing:**
@@ -454,7 +454,8 @@ docker compose exec api python scripts/generate_mock_data.py \
 
 ```bash
 docker compose exec api python scripts/generate_mock_data.py \
-  --scenarios oauth_duplication,api_redesign_duplication,auth_migration_duplication
+  --scenarios oauth_duplication api_redesign_duplication auth_migration_duplication \
+  --clear
 ```
 
 **Result:** Multiple gaps to detect across different topics.
@@ -471,7 +472,7 @@ docker compose exec api python scripts/generate_mock_data.py \
 curl -s -X POST http://localhost:8000/api/v1/gaps/detect \
   -H "Content-Type: application/json" \
   -d '{"timeframe_days": 90, "min_impact_score": 0.0}' \
-  | jq '.metadata.total_gaps'
+  | jq
 ```
 
 **Expected:** 0 gaps (teams worked sequentially, not in parallel)
