@@ -32,6 +32,9 @@ This directory contains all project documentation organized by category.
 - **[search_components_explained.md](./search_components_explained.md)** - Search system components
 - **[three_database_architecture.md](./three_database_architecture.md)** - Database architecture overview
 
+### Showcase & Presentation
+- **[PROJECT_SHOWCASE_GUIDE.md](./PROJECT_SHOWCASE_GUIDE.md)** - How to showcase this project for interviews, demos, and presentations
+
 ## 🎯 Milestones
 
 Planning documents for each development milestone:
@@ -40,12 +43,6 @@ Planning documents for each development milestone:
 - **[milestones/MILESTONE_1_BREAKDOWN.md](./milestones/MILESTONE_1_BREAKDOWN.md)** - Foundation & Setup
 - **[milestones/MILESTONE_2_BREAKDOWN.md](./milestones/MILESTONE_2_BREAKDOWN.md)** - Ranking & Search Quality
 - **[milestones/MILESTONE_3_BREAKDOWN.md](./milestones/MILESTONE_3_BREAKDOWN.md)** - Gap Detection ✅ **COMPLETE**
-
-## 📖 Guides
-
-Project showcase and presentation guides:
-
-- **[guides/PROJECT_SHOWCASE_GUIDE.md](./guides/PROJECT_SHOWCASE_GUIDE.md)** - How to showcase this project for interviews, demos, and presentations
 
 ## 🗂️ Documentation Organization
 
@@ -61,17 +58,15 @@ docs/
 ├── RANKING.md                         ← Ranking strategies
 ├── TESTING.md                         ← Testing guide
 ├── QUICKSTART.md                      ← Quick start
+├── PROJECT_SHOWCASE_GUIDE.md          ← Interview & presentation guide
 ├── search_components_explained.md     ← Search architecture
 ├── three_database_architecture.md     ← Database architecture
 │
-├── milestones/                        ← Milestone planning
-│   ├── MILESTONES.md
-│   ├── MILESTONE_1_BREAKDOWN.md
-│   ├── MILESTONE_2_BREAKDOWN.md
-│   └── MILESTONE_3_BREAKDOWN.md
-│
-└── guides/                            ← Showcase guides
-    └── PROJECT_SHOWCASE_GUIDE.md
+└── milestones/                        ← Milestone planning
+    ├── MILESTONES.md
+    ├── MILESTONE_1_BREAKDOWN.md
+    ├── MILESTONE_2_BREAKDOWN.md
+    └── MILESTONE_3_BREAKDOWN.md
 ```
 
 ## 🔍 Finding What You Need
@@ -100,7 +95,7 @@ docs/
 → See [milestones/MILESTONES.md](./milestones/MILESTONES.md)
 
 **Demo the project to others**
-→ See [DEMO.md](./DEMO.md) and [guides/PROJECT_SHOWCASE_GUIDE.md](./guides/PROJECT_SHOWCASE_GUIDE.md)
+→ See [DEMO.md](./DEMO.md) and [PROJECT_SHOWCASE_GUIDE.md](./PROJECT_SHOWCASE_GUIDE.md)
 
 ---
 
