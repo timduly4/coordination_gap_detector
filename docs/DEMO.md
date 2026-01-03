@@ -173,8 +173,10 @@ curl -X POST http://localhost:8000/api/v1/search/ \
     author,
     score,
     ranking_details: {
-      semantic_score,
-      bm25_score
+      semantic_score: .ranking_details.semantic_score,
+      keyword_score: .ranking_details.keyword_score,
+      semantic_rank: .ranking_details.semantic_rank,
+      keyword_rank: .ranking_details.keyword_rank
     },
     snippet: .content[:80]
   }'
