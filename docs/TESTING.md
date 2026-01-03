@@ -7,8 +7,8 @@ This document provides comprehensive guidance on testing the Coordination Gap De
 - [Quick Start](#quick-start)
 - [Test Structure](#test-structure)
 - [Running Tests](#running-tests)
-- [Milestone 1E Tests](#milestone-1e-tests)
-- [Milestone 1F Tests](#milestone-1f-tests)
+- [Vector Store and Embedding Tests](#vector-store-and-embedding-tests)
+- [Search API Tests](#search-api-tests)
 - [Docker Testing](#docker-testing)
 - [Coverage Reports](#coverage-reports)
 - [Writing Tests](#writing-tests)
@@ -148,9 +148,9 @@ uv run pytest -n auto
 uv run pytest -n 4
 ```
 
-## Milestone 1E Tests
+## Vector Store and Embedding Tests
 
-Milestone 1E focuses on vector store and embedding functionality. Here's how to test these components:
+The following tests cover vector store and embedding functionality:
 
 ### Vector Store Tests (test_vector_store.py)
 
@@ -250,19 +250,19 @@ uv run pytest tests/test_text_processing.py::TestChunkText -v
 uv run pytest tests/test_text_processing.py::TestExtractKeywords -v
 ```
 
-### Run All Milestone 1E Tests
+### Run All Vector Store and Embedding Tests
 
 ```bash
-# Run all three test modules
+# Run all vector store and embedding tests
 uv run pytest tests/test_vector_store.py tests/test_embeddings.py tests/test_text_processing.py -v
 
 # With coverage report
 uv run pytest tests/test_vector_store.py tests/test_embeddings.py tests/test_text_processing.py --cov=src.db.vector_store --cov=src.models.embeddings --cov=src.utils.text_processing --cov-report=term-missing
 ```
 
-## Milestone 1F Tests
+## Search API Tests
 
-Milestone 1F focuses on the Search API endpoint with semantic search functionality. Here's how to test these components:
+The following tests cover the Search API endpoint with semantic search functionality:
 
 ### Search API Tests (test_api/test_search.py)
 
@@ -360,7 +360,7 @@ finally:
     app.dependency_overrides.clear()
 ```
 
-### Run All Milestone 1F Tests
+### Run All Search API Tests
 
 ```bash
 # Run all search API tests
@@ -384,7 +384,7 @@ docker compose up -d
 # Run all tests
 docker compose exec api pytest -v
 
-# Run Milestone 1E tests
+# Run vector store and embedding tests
 docker compose exec api pytest tests/test_vector_store.py tests/test_embeddings.py tests/test_text_processing.py -v
 
 # Run with coverage
