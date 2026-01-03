@@ -43,10 +43,9 @@ Planning documents for each development milestone:
 
 ## 📖 Guides
 
-Exploration and readiness guides:
+Project showcase and presentation guides:
 
-- **[guides/EXPLORE_MILESTONE_2.md](./guides/EXPLORE_MILESTONE_2.md)** - Interactive exploration of Milestone 2
-- **[guides/READY_FOR_MILESTONE_3.md](./guides/READY_FOR_MILESTONE_3.md)** - Readiness checklist for Milestone 3
+- **[guides/PROJECT_SHOWCASE_GUIDE.md](./guides/PROJECT_SHOWCASE_GUIDE.md)** - How to showcase this project for interviews, demos, and presentations
 
 ## 🗂️ Documentation Organization
 
@@ -71,11 +70,8 @@ docs/
 │   ├── MILESTONE_2_BREAKDOWN.md
 │   └── MILESTONE_3_BREAKDOWN.md
 │
-└── guides/                            ← Exploration guides
-    ├── EXPLORE_MILESTONE_2.md
-    ├── MILESTONE_DEMO_GUIDE.md
-    ├── PROJECT_SHOWCASE_GUIDE.md
-    └── READY_FOR_MILESTONE_3.md
+└── guides/                            ← Showcase guides
+    └── PROJECT_SHOWCASE_GUIDE.md
 ```
 
 ## 🔍 Finding What You Need
@@ -105,9 +101,6 @@ docs/
 
 **Demo the project to others**
 → See [DEMO.md](./DEMO.md) and [guides/PROJECT_SHOWCASE_GUIDE.md](./guides/PROJECT_SHOWCASE_GUIDE.md)
-
-**Know if I'm ready for Milestone 3**
-→ See [guides/READY_FOR_MILESTONE_3.md](./guides/READY_FOR_MILESTONE_3.md)
 
 ---
 

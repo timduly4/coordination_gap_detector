@@ -269,7 +269,7 @@ curl -s -X POST http://localhost:8000/api/v1/gaps/detect \
     teams_involved,
     impact_tier,
     confidence,
-    estimated_cost: .cost_estimate.engineering_hours,
+    estimated_cost: .estimated_cost.engineering_hours,
     recommendation: .recommendation[:100]
   }'
 ```
