@@ -80,7 +80,7 @@ docker compose exec api python scripts/generate_mock_data.py \
 ```
 
 **What this creates:**
-- 25 messages across 3 Slack channels (#platform, #auth-team, #engineering)
+- 25 messages across 3 Slack channels: 12 in #auth-team, 1 in #engineering, 12 in #platform
 - 2 teams independently implementing OAuth2
 - 14 days of conversation history
 - ~40 hours of duplicated engineering effort (simulated)
@@ -104,9 +104,9 @@ docker compose exec postgres psql -U coordination_user -d coordination \
 ```
    channel    | count
 --------------+-------
- #platform    |    10
- #auth-team   |    10
- #engineering |     5
+ #auth-team   |    12
+ #engineering |     1
+ #platform    |    12
 ```
 
 ---
@@ -173,8 +173,10 @@ curl -X POST http://localhost:8000/api/v1/search/ \
     author,
     score,
     ranking_details: {
-      semantic_score,
-      bm25_score
+      semantic_score: .ranking_details.semantic_score,
+      keyword_score: .ranking_details.keyword_score,
+      semantic_rank: .ranking_details.semantic_rank,
+      keyword_rank: .ranking_details.keyword_rank
     },
     snippet: .content[:80]
   }'
@@ -267,7 +269,7 @@ curl -s -X POST http://localhost:8000/api/v1/gaps/detect \
     teams_involved,
     impact_tier,
     confidence,
-    estimated_cost: .cost_estimate.engineering_hours,
+    estimated_cost: .estimated_cost.engineering_hours,
     recommendation: .recommendation[:100]
   }'
 ```
@@ -374,29 +376,6 @@ curl -X POST http://localhost:8000/api/v1/gaps/detect \
     "min_impact_score": 0.0,
     "similarity_threshold": 0.65
   }' | jq '.metadata.total_gaps'
-```
-
-### 5.3 List All Detected Gaps
-
-```bash
-# Get paginated list of all gaps
-curl "http://localhost:8000/api/v1/gaps?limit=10" | jq '.gaps[] | {
-  id,
-  type,
-  teams_involved,
-  impact_tier,
-  detected_at
-}'
-```
-
-### 5.4 Get Specific Gap Details
-
-```bash
-# First, get a gap ID
-GAP_ID=$(curl -s "http://localhost:8000/api/v1/gaps?limit=1" | jq -r '.gaps[0].id')
-
-# Then fetch full details
-curl "http://localhost:8000/api/v1/gaps/$GAP_ID" | jq
 ```
 
 ---

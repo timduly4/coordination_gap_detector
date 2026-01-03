@@ -351,13 +351,16 @@ class VectorStore:
             True if successful, False otherwise
         """
         try:
-            # Delete and recreate the collection
-            self.client.delete_collection(name=self.collection_name)
-            self.collection = self.client.get_or_create_collection(
-                name=self.collection_name,
-                metadata={"description": "Messages from all sources for coordination gap detection"},
-            )
-            logger.warning(f"Cleared all documents from collection '{self.collection_name}'")
+            # Get all document IDs and delete them (preserves collection UUID)
+            result = self.collection.get()
+            ids = result.get('ids', [])
+
+            if ids:
+                self.collection.delete(ids=ids)
+                logger.warning(f"Cleared {len(ids)} documents from collection '{self.collection_name}'")
+            else:
+                logger.info(f"Collection '{self.collection_name}' is already empty")
+
             return True
         except Exception as e:
             logger.error(f"Failed to clear collection: {e}")
