@@ -1615,17 +1615,20 @@ terraform apply
 
 ## Architecture
 
-The system uses a multi-stage detection pipeline:
+The system uses a multi-stage detection pipeline with hybrid search and ML-powered ranking:
 
-1. **Data Ingestion** - Stream events from all sources
-2. **Entity Extraction** - Identify people, teams, projects
-3. **Semantic Indexing** - Embed content for similarity search
-4. **Pattern Detection** - Apply gap detection algorithms
-5. **Impact Scoring** - Rank gaps by organizational cost
-6. **LLM Reasoning** - Generate insights with Claude
-7. **Alert Routing** - Notify relevant stakeholders
+1. **Data Ingestion** - Stream events from all sources (Slack, GitHub, Google Docs)
+2. **Hybrid Search** - Elasticsearch (BM25) + ChromaDB (vectors) with RRF fusion
+3. **Entity Extraction** - Identify people, teams, projects using NLP
+4. **Semantic Clustering** - DBSCAN clustering (0.85 similarity threshold)
+5. **Temporal Overlap** - Detect simultaneous work across teams
+6. **LLM Verification** - Claude API validates true duplication vs collaboration
+7. **Impact Scoring** - Multi-signal scoring (team size, time, criticality)
+8. **Alert Routing** - Notify relevant stakeholders with actionable recommendations
 
-For detailed architecture documentation, see [CLAUDE.md](./CLAUDE.md).
+**📐 [View Detailed Architecture Diagrams & Design Decisions →](./docs/ARCHITECTURE.md)**
+
+Includes: Component architecture, data flow, design trade-offs, scalability strategy, and production deployment patterns.
 
 ## Contributing
 
