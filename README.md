@@ -3,7 +3,7 @@
 [![Python](https://img.shields.io/badge/python-3.11+-blue.svg)](https://www.python.org/downloads/)
 [![FastAPI](https://img.shields.io/badge/FastAPI-0.104+-green.svg)](https://fastapi.tiangolo.com/)
 [![Tests](https://github.com/timduly4/coordination_gap_detector/workflows/Tests/badge.svg)](https://github.com/timduly4/coordination_gap_detector/actions)
-[![License: MIT](https://img.shields.io/badge/License-MIT-yellow.svg)](LICENSE)
+[![License: AGPL-3.0](https://img.shields.io/badge/License-AGPL%20v3-blue.svg)](LICENSE)
 [![Code Coverage](https://img.shields.io/badge/coverage-87%25-brightgreen.svg)](https://github.com/timduly4/coordination_gap_detector)
 
 AI-powered coordination gap detection system for identifying failures across enterprise communication channels. This platform automatically detects when teams are duplicating work, missing critical context, or working at cross-purposes across Slack, GitHub, Google Docs, and other collaboration tools.
@@ -1676,7 +1676,7 @@ docker compose exec api pytest --cov=src
 
 ## License
 
-This project is licensed under the MIT License - see the LICENSE file for details.
+This project is licensed under the GNU Affero General Public License v3.0 (AGPL-3.0) - see the LICENSE file for details.
 
 ## Resources
 

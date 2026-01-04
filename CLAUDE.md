@@ -828,7 +828,7 @@ claude-code "optimize Slack ingestion for 100k messages/day"
 
 ---
 
-**Last Updated**: December 2024  
-**Python Version**: 3.11+  
-**Kubernetes**: 1.28+  
-**License**: MIT
+**Last Updated**: December 2024
+**Python Version**: 3.11+
+**Kubernetes**: 1.28+
+**License**: AGPL-3.0
