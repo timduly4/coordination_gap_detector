@@ -2,7 +2,7 @@
 
 [![Python](https://img.shields.io/badge/python-3.11+-blue.svg)](https://www.python.org/downloads/)
 [![FastAPI](https://img.shields.io/badge/FastAPI-0.104+-green.svg)](https://fastapi.tiangolo.com/)
-[![Tests](https://github.com/timduly4/coordination_gap_detector/workflows/Tests/badge.svg)](https://github.com/timduly4/coordination_gap_detector/actions)
+[![Tests](https://github.com/timduly4/coordination_gap_detector/actions/workflows/test.yml/badge.svg)](https://github.com/timduly4/coordination_gap_detector/actions)
 [![License: AGPL-3.0](https://img.shields.io/badge/License-AGPL%20v3-blue.svg)](LICENSE)
 [![Code Coverage](https://img.shields.io/badge/coverage-87%25-brightgreen.svg)](https://github.com/timduly4/coordination_gap_detector)
 
