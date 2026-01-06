@@ -234,7 +234,7 @@ def main():
 
         # Initialize mock client
         mock_client = MockSlackClient()
-        scenario_descriptions = mock_client.get_scenario_descriptions()
+        scenario_descriptions = mock_client.get_duplicate_work_scenario_descriptions()
 
         # Scenario selection
         st.subheader("📁 Select Scenario")
@@ -503,7 +503,7 @@ def main():
         st.markdown("### 🎬 Available Scenarios")
 
         mock_client = MockSlackClient()
-        scenarios = mock_client.get_scenario_descriptions()
+        scenarios = mock_client.get_duplicate_work_scenario_descriptions()
 
         for scenario_key, description in scenarios.items():
             with st.expander(f"📁 {description}"):

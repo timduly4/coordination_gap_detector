@@ -5,7 +5,7 @@ Interactive web dashboard for visualizing and exploring coordination gaps detect
 ## Features
 
 ### 🎯 Interactive Gap Detection
-- Select from multiple pre-built scenarios (OAuth duplication, API redesign, auth migration, etc.)
+- Select from 6 pre-built scenarios (3 positive examples, 3 negative examples)
 - Configure detection settings (minimum impact score, evidence display)
 - Run detection with a single click
 
@@ -123,6 +123,8 @@ The dashboard will open in your default browser at `http://localhost:8501`.
   - Timestamped filenames
 
 ## Available Scenarios
+
+**Note**: The dashboard currently shows 6 scenarios designed for the **DUPLICATE_WORK** detector, which is the only gap type fully implemented. Other gap types (MISSING_CONTEXT, STALE_DOCS, KNOWLEDGE_SILO) are planned for future development. The 6 scenarios include 3 positive examples (should detect gaps) and 3 negative examples (should NOT detect gaps) to validate detection accuracy.
 
 ### Positive Examples (Should Detect Gaps)
 

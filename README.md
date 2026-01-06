@@ -105,7 +105,7 @@ streamlit run streamlit_app.py
 ```
 
 The dashboard provides:
-- 📊 **Interactive Gap Detection** - Select scenarios and run detection with one click
+- 📊 **Interactive Gap Detection** - Select from 6 pre-built scenarios (3 positive examples, 3 negative examples)
 - 🎯 **Rich Visualizations** - Color-coded gap cards, impact charts, cost breakdowns
 - 💡 **AI Insights** - Claude-powered recommendations and temporal analysis
 - 💾 **Export Results** - Download gaps as JSON for further analysis
