@@ -112,6 +112,10 @@ notebooks = [
     "pandas>=2.2.0",
 ]
 
+dashboard = [
+    "streamlit>=1.30.0",
+]
+
 [project.urls]
 Homepage = "https://github.com/timduly4/coordination_gap_detector"
 Repository = "https://github.com/timduly4/coordination_gap_detector"

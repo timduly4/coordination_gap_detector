@@ -92,6 +92,26 @@ Follow our [**Interactive Demo Guide**](./docs/DEMO.md) for a hands-on walkthrou
 
 Perfect for first-time users, demos, and understanding the system's capabilities.
 
+## 🎨 Streamlit Dashboard
+
+**Want a visual interface?** Try our interactive Streamlit dashboard!
+
+```bash
+# Install dashboard dependencies
+uv pip install -e ".[dashboard]"
+
+# Launch the dashboard
+streamlit run streamlit_app.py
+```
+
+The dashboard provides:
+- 📊 **Interactive Gap Detection** - Select scenarios and run detection with one click
+- 🎯 **Rich Visualizations** - Color-coded gap cards, impact charts, cost breakdowns
+- 💡 **AI Insights** - Claude-powered recommendations and temporal analysis
+- 💾 **Export Results** - Download gaps as JSON for further analysis
+
+Perfect for demos, presentations, and exploring detection results visually. See [DASHBOARD.md](./DASHBOARD.md) for full documentation.
+
 ## Tech Stack
 
 - **Python 3.11+** with FastAPI
