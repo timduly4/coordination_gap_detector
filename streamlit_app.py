@@ -18,6 +18,7 @@ sys.path.insert(0, str(Path(__file__).parent))
 from src.ingestion.slack.mock_client import MockSlackClient
 from src.detection.duplicate_work import DuplicateWorkDetector
 from src.models.schemas import CoordinationGap
+from src.models.embeddings import EmbeddingGenerator
 
 
 # Page configuration
@@ -194,25 +195,71 @@ def display_gap_card(gap: CoordinationGap, index: int) -> None:
                 st.caption(f"... and {len(gap.evidence) - 10} more pieces of evidence")
 
 
+class SimpleMessage:
+    """Simple message wrapper to provide expected attributes for detector."""
+    def __init__(self, id, content, author, channel, timestamp, external_id, thread_id, metadata):
+        self.id = id
+        self.content = content
+        self.author = author
+        self.channel = channel
+        self.timestamp = timestamp
+        self.external_id = external_id
+        self.thread_id = thread_id
+        self.metadata = metadata
+
+
+@st.cache_resource
+def get_embedding_generator():
+    """Get cached embedding generator instance."""
+    return EmbeddingGenerator()
+
+
 async def detect_gaps_async(messages, scenario_name: str) -> List[CoordinationGap]:
-    """Run gap detection asynchronously."""
+    """
+    Run gap detection asynchronously with proper message formatting and embeddings.
+
+    Args:
+        messages: List of MockMessage objects from scenario
+        scenario_name: Name of the scenario being analyzed
+
+    Returns:
+        List of detected CoordinationGap objects
+    """
     detector = DuplicateWorkDetector()
 
-    # Convert mock messages to the format expected by detector
+    # Convert mock messages to objects with id attribute
     formatted_messages = []
-    for msg in messages:
-        formatted_messages.append({
-            "content": msg.content,
-            "author": msg.author,
-            "channel": msg.channel,
-            "timestamp": msg.timestamp,
-            "external_id": msg.external_id,
-            "thread_id": msg.thread_id,
-            "metadata": msg.metadata
-        })
+    message_contents = []
 
-    # Detect gaps (this will generate embeddings internally)
-    gaps = await detector.detect(messages=formatted_messages)
+    for idx, msg in enumerate(messages):
+        # Create message object with ID
+        formatted_msg = SimpleMessage(
+            id=idx + 1,  # Use 1-based indexing
+            content=msg.content,
+            author=msg.author,
+            channel=msg.channel,
+            timestamp=msg.timestamp,
+            external_id=msg.external_id,
+            thread_id=msg.thread_id,
+            metadata=msg.metadata
+        )
+        formatted_messages.append(formatted_msg)
+        message_contents.append(msg.content)
+
+    # Generate embeddings for all messages
+    embedding_gen = get_embedding_generator()
+    embeddings = embedding_gen.generate_embeddings(
+        message_contents,
+        batch_size=32,
+        show_progress=False
+    )
+
+    # Convert embeddings to numpy arrays (detector expects numpy)
+    import numpy as np
+    embeddings_array = [np.array(emb) for emb in embeddings]
+
+    # Detect gaps with both messages and embeddings
+    gaps = await detector.detect(messages=formatted_messages, embeddings=embeddings_array)
 
     return gaps
 
@@ -231,6 +278,16 @@ def main():
     # Sidebar
     with st.sidebar:
         st.header("⚙️ Configuration")
+
+        # Check for API key
+        import os
+        api_key_set = os.getenv("ANTHROPIC_API_KEY") is not None
+        if not api_key_set:
+            st.warning("⚠️ ANTHROPIC_API_KEY not set. LLM verification will use heuristic fallback (may affect accuracy).")
+        else:
+            st.success("✅ ANTHROPIC_API_KEY detected")
+
+        st.markdown("---")
 
         # Initialize mock client
         mock_client = MockSlackClient()
