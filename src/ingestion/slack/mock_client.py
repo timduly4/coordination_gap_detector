@@ -37,6 +37,16 @@ class MockSlackClient:
     4. Feature Planning - Cross-team feature discussion
     """
 
+    # Scenarios that work with currently implemented DUPLICATE_WORK detector
+    DUPLICATE_WORK_SCENARIOS = [
+        "oauth_duplication",
+        "api_redesign_duplication",
+        "auth_migration_duplication",
+        "similar_topics_different_scope",  # Negative example
+        "sequential_work",  # Negative example
+        "intentional_collaboration",  # Negative example
+    ]
+
     def __init__(self):
         """Initialize the mock client with predefined scenarios."""
         self.scenarios = {
@@ -65,6 +75,38 @@ class MockSlackClient:
         if scenario_name not in self.scenarios:
             raise ValueError(f"Unknown scenario: {scenario_name}")
         return self.scenarios[scenario_name]()
+
+    def get_duplicate_work_scenarios(self) -> Dict[str, Any]:
+        """
+        Get only scenarios that work with the DUPLICATE_WORK detector.
+
+        Returns scenarios designed for duplicate work detection, including
+        both positive examples (should detect gaps) and negative examples
+        (should NOT detect gaps).
+
+        Returns:
+            Dictionary mapping scenario names to generator functions
+        """
+        return {
+            key: self.scenarios[key]
+            for key in self.DUPLICATE_WORK_SCENARIOS
+        }
+
+    def get_duplicate_work_scenario_descriptions(self) -> Dict[str, str]:
+        """
+        Get descriptions for DUPLICATE_WORK scenarios only.
+
+        Filters the full scenario description list to only include scenarios
+        that work with the currently implemented DUPLICATE_WORK detector.
+
+        Returns:
+            Dictionary mapping scenario names to their descriptions
+        """
+        all_descriptions = self.get_scenario_descriptions()
+        return {
+            key: all_descriptions[key]
+            for key in self.DUPLICATE_WORK_SCENARIOS
+        }
 
     def _generate_oauth_scenario(self) -> List[MockMessage]:
         """
